@@ -1,312 +1,1797 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ניהול נוכחות באירועים</title>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <style>
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, "Segoe UI", Arial, sans-serif; background: #f5f6fa; color: #1e293b; }
-  header { background: #1e2a4a; color: #fff; padding: 16px 20px; display: flex; align-items: center; gap: 12px; position: sticky; top: 0; z-index: 5; }
-  header h1 { font-size: 20px; margin: 0; flex: 1; }
-  header button { background: transparent; border: 1px solid #ffffff55; color: #fff; padding: 6px 12px; border-radius: 8px; font-size: 14px; }
-  main { max-width: 720px; margin: 0 auto; padding: 16px; }
-  .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 16px; margin-bottom: 14px; }
-  h2 { font-size: 18px; margin: 0 0 12px; }
-  input[type=text], input[type=date], input[type=search] { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 16px; margin-bottom: 10px; }
-  .btn { display: inline-block; background: #1e2a4a; color: #fff; border: none; border-radius: 10px; padding: 12px 16px; font-size: 16px; cursor: pointer; }
-  .btn.secondary { background: #e2e8f0; color: #1e293b; }
-  .btn.danger { background: #dc2626; }
-  .btn.full { width: 100%; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .row > * { flex: 1; }
-  .event { display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 10px; cursor: pointer; background: #fff; }
-  .event small { color: #64748b; }
-  .stats { display: flex; gap: 10px; text-align: center; }
-  .stat { flex: 1; background: #eef2f9; border-radius: 12px; padding: 12px 6px; }
-  .stat b { display: block; font-size: 24px; }
-  .stat span { font-size: 13px; color: #475569; }
-  .bar { height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin-top: 12px; }
-  .bar div { height: 100%; background: #16a34a; transition: width .3s; }
-  .guest { display: flex; align-items: center; justify-content: space-between; padding: 14px 12px; border-bottom: 1px solid #f1f5f9; cursor: pointer; user-select: none; }
-  .guest:last-child { border-bottom: none; }
-  .guest.in { background: #f0fdf4; }
-  .check { width: 30px; height: 30px; border-radius: 50%; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #fff; flex-shrink: 0; }
-  .guest.in .check { background: #16a34a; border-color: #16a34a; }
-  .guest .time { font-size: 12px; color: #16a34a; margin-top: 2px; }
-  .empty { text-align: center; color: #64748b; padding: 20px; }
-  .tabs { display: flex; gap: 6px; margin-bottom: 10px; }
-  .tabs button { flex: 1; padding: 8px; border: 1px solid #cbd5e1; background: #fff; border-radius: 8px; font-size: 14px; }
-  .tabs button.active { background: #1e2a4a; color: #fff; border-color: #1e2a4a; }
-  .note { font-size: 13px; color: #64748b; margin-top: 8px; }
-  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1e293b; color: #fff; padding: 10px 18px; border-radius: 10px; font-size: 15px; opacity: 0; transition: opacity .3s; pointer-events: none; }
-  .toast.show { opacity: 1; }
-  .hidden { display: none; }
+:root{
+  --navy:#1A2B4C; --navy-2:#24396A; --navy-3:#2F4C8A; --navy-soft:#EEF2F9;
+  --bg:#FFFFFF; --surface:#F7F8FA; --surface-2:#F1F3F6; --border:#E4E7EC; --border-2:#D0D5DD;
+  --text:#101828; --text-2:#344054; --muted:#667085; --faint:#98A2B3;
+  --green:#0E7A55; --green-bg:#E8F6F0; --red:#B42318; --red-bg:#FDEDEC; --amber:#B54708; --amber-bg:#FEF4E6;
+  --radius:10px; --radius-sm:7px; --shadow:0 1px 2px rgba(16,24,40,.05); --shadow-lg:0 12px 32px rgba(16,24,40,.14);
+  --side:256px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:'Heebo',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;color:var(--text);background:var(--bg);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--navy-3);text-decoration:none}
+a:hover{text-decoration:underline}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.01em}
+h1{font-size:24px} h2{font-size:16px} h3{font-size:14px}
+.num{font-variant-numeric:tabular-nums}
+
+/* Layout */
+.app{display:grid;grid-template-columns:var(--side) 1fr;min-height:100vh}
+.side{background:var(--navy);color:#fff;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:20px 14px}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 22px}
+.brand-mark{width:36px;height:36px;border-radius:9px;background:#fff;color:var(--navy);display:grid;place-items:center;font-weight:800}
+.brand-name{font-weight:700;font-size:15px;line-height:1.2}
+.brand-sub{font-size:12px;color:#AFC0DE}
+.nav{display:flex;flex-direction:column;gap:2px}
+.nav a{display:flex;align-items:center;gap:11px;color:#D5DEEE;padding:10px 12px;border-radius:8px;font-weight:500;font-size:14.5px}
+.nav a:hover{background:rgba(255,255,255,.07);text-decoration:none;color:#fff}
+.nav a.active{background:rgba(255,255,255,.13);color:#fff}
+.nav svg{width:19px;height:19px;flex:none;opacity:.9}
+.side-foot{margin-top:auto;border-top:1px solid rgba(255,255,255,.12);padding:14px 8px 0;font-size:13px;color:#C3CFE6}
+.side-foot .who{font-weight:600;color:#fff}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#4ADE80;margin-inline-end:6px;vertical-align:middle}
+.dot.off{background:#F59E0B}
+.locked .side,.locked .topbar,.locked .scrim{display:none!important}
+.locked .app{grid-template-columns:1fr}
+.logout{margin-top:10px;background:transparent;border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:7px;padding:5px 12px;font-size:13px;cursor:pointer}
+.logout:hover{background:rgba(255,255,255,.1)}
+.main{min-width:0;padding:28px 36px 60px;max-width:1360px;width:100%}
+.topbar{display:none}
+
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap}
+.page-head .sub{color:var(--muted);margin:4px 0 0;font-size:14px}
+.head-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:40px;padding:0 16px;border-radius:8px;border:1px solid var(--border-2);background:#fff;color:var(--text-2);font-weight:600;font-size:14px;cursor:pointer;white-space:nowrap;text-decoration:none!important;transition:background .12s,border-color .12s}
+.btn:hover{background:var(--surface)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.primary:hover{background:var(--navy-2)}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn.danger:hover{filter:brightness(.95)}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-2)}
+.btn.sm{height:32px;padding:0 11px;font-size:13px}
+.btn svg{width:16px;height:16px}
+.icon-btn{width:32px;height:32px;border-radius:7px;border:1px solid transparent;background:transparent;display:inline-grid;place-items:center;cursor:pointer;color:var(--muted)}
+.icon-btn:hover{background:var(--surface-2);color:var(--text)}
+.icon-btn svg{width:16px;height:16px}
+
+/* Cards / KPI */
+.card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-pad{padding:20px}
+.card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border)}
+.card-head .hint{color:var(--muted);font-size:13px}
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow);min-width:0}
+.kpi .k-label{font-size:13px;color:var(--muted);font-weight:500}
+.kpi .k-val{font-size:28px;font-weight:700;margin-top:4px;line-height:1.15;font-variant-numeric:tabular-nums;color:var(--navy)}
+.kpi .k-sub{font-size:12.5px;color:var(--faint);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi.accent{background:var(--navy);border-color:var(--navy)}
+.kpi.accent .k-label{color:#B9C7E2}.kpi.accent .k-val{color:#fff}.kpi.accent .k-sub{color:#9FB1D6}
+.grid-2{display:grid;grid-template-columns:3fr 2fr;gap:18px}
+.grid-2e{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.chart-box{position:relative;padding:14px 18px 18px}
+.stack{display:flex;flex-direction:column;gap:18px}
+
+/* Tables */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{font-size:12.5px;font-weight:600;color:var(--muted);text-align:start;padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);white-space:nowrap}
+.tbl td{padding:12px 16px;border-bottom:1px solid var(--border);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tbody tr.click{cursor:pointer}
+.tbl tbody tr.click:hover td{background:var(--surface)}
+.tbl .muted{color:var(--muted);font-size:13px}
+.tbl td.n,.tbl th.n{text-align:end;font-variant-numeric:tabular-nums}
+.t-name{font-weight:600;color:var(--text)}
+.rate{display:flex;align-items:center;gap:10px;min-width:140px}
+.rate .bar{flex:1;height:7px;border-radius:5px;background:var(--surface-2);overflow:hidden}
+.rate .bar i{display:block;height:100%;background:var(--navy-3);border-radius:5px}
+.rate .bar i.low{background:#A0AEC8}
+.rate b{font-weight:600;font-size:13.5px;min-width:46px;text-align:end;font-variant-numeric:tabular-nums}
+.tbl-wrap{overflow-x:auto}
+
+.pill{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 10px;border-radius:20px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.pill.ok{background:var(--green-bg);color:var(--green)}
+.pill.no{background:var(--surface-2);color:var(--muted)}
+.pill.err{background:var(--red-bg);color:var(--red)}
+.pill.warn{background:var(--amber-bg);color:var(--amber)}
+.pill.info{background:var(--navy-soft);color:var(--navy-3)}
+
+/* Forms */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.lbl{font-size:13.5px;font-weight:600;color:var(--text-2)}
+.field .req{color:var(--red)}
+.input,select.input,textarea.input{height:42px;border:1px solid var(--border-2);border-radius:8px;padding:0 12px;background:#fff;outline:none;width:100%;transition:border-color .12s,box-shadow .12s}
+textarea.input{height:auto;min-height:80px;padding:10px 12px;resize:vertical}
+.input:focus{border-color:var(--navy-3);box-shadow:0 0 0 3px rgba(47,76,138,.15)}
+.input.bad{border-color:var(--red)}
+.err-msg{color:var(--red);font-size:13px}
+.help{color:var(--muted);font-size:12.5px}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.form-grid .full{grid-column:1/-1}
+.search{position:relative;flex:1;min-width:200px}
+.search svg{position:absolute;inset-inline-start:12px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--faint);pointer-events:none}
+.search .input{padding-inline-start:40px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--border)}
+.seg{display:inline-flex;background:var(--surface-2);border-radius:8px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;height:34px;padding:0 13px;border-radius:6px;font-weight:600;font-size:13.5px;color:var(--muted);cursor:pointer;white-space:nowrap}
+.seg button.on{background:#fff;color:var(--navy);box-shadow:0 1px 2px rgba(16,24,40,.1)}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:16px;overflow-x:auto}
+.tabs button{border:0;background:transparent;padding:10px 14px;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}
+.tabs button.on{color:var(--navy);border-color:var(--navy)}
+.tabs .cnt{display:inline-block;background:var(--navy-soft);color:var(--navy-3);border-radius:10px;padding:0 7px;font-size:12px;margin-inline-start:6px}
+
+/* Drop zone */
+.drop{border:1.5px dashed var(--border-2);border-radius:var(--radius);padding:28px 20px;text-align:center;background:var(--surface);cursor:pointer;transition:border-color .12s,background .12s}
+.drop:hover,.drop.over{border-color:var(--navy-3);background:var(--navy-soft)}
+.drop svg{width:34px;height:34px;color:var(--navy-3)}
+.drop .d-title{font-weight:600;margin-top:8px}
+.drop .d-sub{color:var(--muted);font-size:13px;margin-top:2px}
+.file-chip{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);margin-bottom:12px}
+.file-chip .fn{font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.map-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:12px;align-items:end}
+.sum-chips{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+.preview{max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:8px}
+.preview .tbl td{padding:8px 14px}
+.preview tr.bad td{background:#FFF8F7}
+
+/* Check-in */
+.ev-head{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:18px}
+.ev-meta{color:var(--muted);font-size:14px;margin-top:4px;display:flex;gap:14px;flex-wrap:wrap}
+.back{display:inline-flex;align-items:center;gap:4px;font-size:13.5px;color:var(--muted);margin-bottom:8px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) 1.4fr;gap:12px;margin-bottom:16px}
+.stat{border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;background:#fff}
+.stat .s-l{font-size:13px;color:var(--muted);font-weight:500}
+.stat .s-v{font-size:26px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums}
+.stat.present .s-v{color:var(--green)} .stat.absent .s-v{color:var(--text-2)}
+.stat.rate{background:var(--navy);border-color:var(--navy);color:#fff}
+.stat.rate .s-l{color:#B9C7E2}
+.prog{height:8px;background:rgba(255,255,255,.18);border-radius:6px;overflow:hidden;margin-top:8px;position:relative}
+.prog i{display:block;height:100%;background:#fff;border-radius:6px;transition:width .25s}
+.prog .goal{position:absolute;top:-3px;bottom:-3px;width:2px;background:#F5B544}
+.checkin{}
+.ci-tools{position:sticky;top:0;z-index:5;background:#fff}
+.ci-search .input{height:50px;font-size:17px}
+.g-head,.g-row{display:grid;grid-template-columns:62px minmax(0,1fr) minmax(0,1fr) 110px 96px 44px;align-items:center}
+.g-head{background:var(--surface);border-bottom:1px solid var(--border);font-size:12.5px;font-weight:600;color:var(--muted);height:40px}
+.g-head span{padding:0 10px}
+.g-row{min-height:58px;border-bottom:1px solid var(--border);cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.g-row:hover{background:var(--surface)}
+.g-row.on{background:#F3FAF7}
+.g-row.on:hover{background:#EAF6F0}
+.g-row>span{padding:0 10px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.g-first,.g-last{font-weight:600;font-size:15.5px}
+.g-time{color:var(--muted);font-size:13px;font-variant-numeric:tabular-nums}
+.g-check{display:grid;place-items:center}
+.g-check input{position:absolute;opacity:0;width:1px;height:1px}
+.box{width:28px;height:28px;border:2px solid var(--border-2);border-radius:7px;display:grid;place-items:center;background:#fff;transition:all .1s}
+.box svg{width:18px;height:18px;color:#fff;opacity:0}
+.g-row.on .box{background:var(--green);border-color:var(--green)}
+.g-row.on .box svg{opacity:1}
+.g-check input:focus-visible+.box{box-shadow:0 0 0 3px rgba(47,76,138,.3)}
+.g-row.ro{cursor:default}
+.g-remove{opacity:.55}
+.g-row:hover .g-remove{opacity:1}
+.list-empty{padding:40px 20px;text-align:center;color:var(--muted)}
+.list-foot{padding:12px 16px;color:var(--muted);font-size:13px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.hide-m{}
+@media (max-width:720px){.hide-m{display:none}}
+.kbd{display:inline-block;border:1px solid var(--border-2);border-bottom-width:2px;border-radius:5px;padding:0 6px;font-size:12px;background:#fff;color:var(--text-2)}
+
+/* Event cards (events list) */
+.ev-name{font-weight:600;color:var(--text)}
+.ev-name:hover{color:var(--navy-3)}
+.row-actions{display:flex;gap:2px;justify-content:flex-end}
+
+/* Modal */
+.overlay{position:fixed;inset:0;background:rgba(16,24,40,.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:100;animation:fade .12s}
+.modal{background:#fff;border-radius:14px;box-shadow:var(--shadow-lg);width:100%;max-width:520px;max-height:calc(100vh - 40px);display:flex;flex-direction:column}
+.modal.wide{max-width:860px}
+.modal-head{padding:18px 22px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.modal-head h2{font-size:17px}
+.modal-body{padding:20px 22px;overflow:auto}
+.modal-foot{padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-start;gap:8px;flex-wrap:wrap}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.menu{position:fixed;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-lg);padding:6px;z-index:120;min-width:200px}
+.menu button{display:flex;width:100%;align-items:center;gap:9px;border:0;background:transparent;padding:9px 12px;border-radius:7px;cursor:pointer;text-align:start;font-weight:500;font-size:14px}
+.menu button:hover{background:var(--surface-2)}
+.menu button.danger{color:var(--red)}
+.menu hr{border:0;border-top:1px solid var(--border);margin:5px 0}
+.menu svg{width:16px;height:16px;color:var(--muted)}
+
+/* Toast / banner */
+.toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:200;align-items:center;pointer-events:none}
+.toast{background:var(--navy);color:#fff;padding:11px 18px;border-radius:9px;box-shadow:var(--shadow-lg);font-weight:500;font-size:14px;animation:fade .15s;max-width:90vw}
+.toast.success{background:#0E6B4B}.toast.error{background:var(--red)}
+.banner{display:flex;gap:10px;align-items:flex-start;padding:12px 16px;border-radius:9px;margin-bottom:16px;font-size:14px;border:1px solid}
+.banner.warn{background:var(--amber-bg);border-color:#F8D9AE;color:#7A2E0E}
+.banner.info{background:var(--navy-soft);border-color:#D3DDF0;color:var(--navy-2)}
+.banner.error{background:var(--red-bg);border-color:#F6C9C5;color:#7A1A12}
+
+.empty{padding:48px 24px;text-align:center}
+.empty .e-ico{width:56px;height:56px;border-radius:14px;background:var(--navy-soft);display:grid;place-items:center;margin:0 auto 14px;color:var(--navy-3)}
+.empty .e-ico svg{width:28px;height:28px}
+.empty h3{font-size:17px;margin-bottom:6px}
+.empty p{color:var(--muted);margin:0 auto 18px;max-width:420px}
+.loading{padding:60px 20px;text-align:center;color:var(--muted)}
+.spinner{width:26px;height:26px;border:3px solid var(--border);border-top-color:var(--navy);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.progress{height:8px;background:var(--surface-2);border-radius:6px;overflow:hidden;margin-top:12px}
+.progress i{display:block;height:100%;background:var(--navy);transition:width .2s}
+.gate{max-width:520px;margin:12vh auto;text-align:center}
+.pick-list{max-height:300px;overflow:auto;border:1px solid var(--border);border-radius:8px}
+.pick-list label{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--border);cursor:pointer}
+.pick-list label:hover{background:var(--surface)}
+.pick-list input{width:18px;height:18px;accent-color:var(--navy)}
+.summary-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 18px;background:var(--navy-soft);border-radius:var(--radius);margin-top:18px}
+.summary-bar b{color:var(--navy)}
+.mini-kv{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.mini-kv div{background:var(--surface);border-radius:8px;padding:10px 12px}
+.mini-kv span{display:block;font-size:12px;color:var(--muted)}
+.mini-kv b{font-size:20px;font-variant-numeric:tabular-nums}
+.dup-group{border:1px solid var(--border);border-radius:9px;padding:12px 14px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.hl{display:flex;flex-direction:column;gap:2px}
+.hl .big{font-size:18px;font-weight:700;color:var(--navy)}
+.small{font-size:13px}.muted{color:var(--muted)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+/* Responsive */
+@media (max-width:1180px){
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .grid-2,.grid-2e{grid-template-columns:1fr}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stats .stat.rate{grid-column:1/-1}
+}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .side{position:fixed;inset-block:0;inset-inline-start:0;width:280px;z-index:90;transform:translateX(100%);transition:transform .2s}
+  .side.open{transform:none}
+  .scrim{position:fixed;inset:0;background:rgba(16,24,40,.4);z-index:80;display:none}
+  .scrim.show{display:block}
+  .topbar{display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50;background:var(--navy);color:#fff;padding:10px 14px}
+  .topbar .icon-btn{color:#fff}
+  .topbar .icon-btn:hover{background:rgba(255,255,255,.1)}
+  .topbar .t-title{font-weight:700}
+  .main{padding:18px 16px 60px}
+  .ci-tools{top:52px}
+}
+@media (max-width:720px){
+  h1{font-size:21px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .kpi .k-val{font-size:23px}
+  .kpis .kpi.accent{grid-column:1/-1}
+  .form-grid,.map-row{grid-template-columns:1fr}
+  .mini-kv{grid-template-columns:repeat(2,1fr)}
+  .tbl.cards thead{display:none}
+  .tbl.cards,.tbl.cards tbody,.tbl.cards tr,.tbl.cards td{display:block;width:100%}
+  .tbl.cards tr{padding:12px 14px;border-bottom:1px solid var(--border)}
+  .tbl.cards td{border:0;padding:3px 0;display:flex;justify-content:space-between;gap:10px;text-align:start!important}
+  .tbl.cards td[data-label]::before{content:attr(data-label);color:var(--muted);font-size:13px;font-weight:500}
+  .tbl.cards td.lead{font-size:16px}
+  .tbl.cards td.lead::before{display:none}
+  .row-actions{justify-content:flex-start;margin-top:6px}
+  .g-head,.g-row{grid-template-columns:54px minmax(0,1fr) minmax(0,1fr) 78px 38px}
+  .g-head .h-time,.g-row .g-time{display:none}
+  .g-first,.g-last{font-size:15px}
+  .g-row>span{padding:0 6px}
+  .stat .s-v{font-size:22px}
+  .modal-foot .btn{flex:1}
+  .overlay{padding:10px;align-items:flex-end}
+  .modal{max-height:92vh}
+  .toolbar{padding:12px}
+  .seg{width:100%}.seg button{flex:1}
+}
 </style>
 </head>
-<body>
-<header>
-  <button id="backBtn" class="hidden" onclick="showHome()">→ חזרה</button>
-  <h1 id="title">ניהול נוכחות באירועים</h1>
-</header>
-
-<main>
-  <!-- מסך ראשי: רשימת אירועים -->
-  <section id="home">
-    <div class="card">
-      <h2>אירוע חדש</h2>
-      <input type="text" id="newName" placeholder="שם האירוע">
-      <input type="date" id="newDate">
-      <button class="btn full" onclick="createEvent()">יצירת אירוע</button>
+<body class="locked">
+<div class="app">
+  <aside class="side" id="side">
+    <div class="brand">
+      <div class="brand-mark">נ</div>
+      <div><div class="brand-name">ניהול נוכחות</div><div class="brand-sub">מערכת לניהול נוכחות באירועים</div></div>
     </div>
-    <div id="eventsList"></div>
-    <p class="note">הנתונים נשמרים רק במכשיר הזה ובדפדפן הזה. אין שרת ואין צורך בהתחברות.</p>
-  </section>
-
-  <!-- מסך אירוע -->
-  <section id="eventView" class="hidden">
-    <div class="card">
-      <div class="stats">
-        <div class="stat"><b id="sTotal">0</b><span>מוזמנים</span></div>
-        <div class="stat"><b id="sIn">0</b><span>הגיעו</span></div>
-        <div class="stat"><b id="sPct">0%</b><span>נוכחות</span></div>
-      </div>
-      <div class="bar"><div id="sBar" style="width:0%"></div></div>
+    <nav class="nav" id="nav">
+      <a href="#dashboard" data-r="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>לוח בקרה</a>
+      <a href="#events" data-r="events"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>אירועים</a>
+      <a href="#create" data-r="create"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>יצירת אירוע חדש</a>
+      
+      <a href="#reports" data-r="reports"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>דוחות וניתוחים</a>
+      <a href="#prefs" data-r="prefs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>הגדרות</a>
+    </nav>
+    <div class="side-foot" id="side-foot"><span class="dot off"></span>מתחבר…</div>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+  <div style="min-width:0">
+    <div class="topbar">
+      <button class="icon-btn" id="menu-btn" aria-label="תפריט"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+      <span class="t-title">ניהול נוכחות באירועים</span>
     </div>
-
-    <div class="card">
-      <h2>העלאת רשימת אורחים</h2>
-      <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" class="hidden" onchange="importFile(this)">
-      <button class="btn full" onclick="document.getElementById('fileInput').click()">בחירת קובץ Excel / CSV</button>
-      <p class="note">עמודה ראשונה: שם פרטי, עמודה שנייה: שם משפחה. שורת כותרת תזוהה ותדולג אוטומטית.</p>
-      <div class="row" style="margin-top:10px">
-        <input type="text" id="addFirst" placeholder="שם פרטי">
-        <input type="text" id="addLast" placeholder="שם משפחה">
-      </div>
-      <button class="btn secondary full" onclick="addGuest()">הוספת אורח ידנית</button>
-    </div>
-
-    <div class="card">
-      <input type="search" id="search" placeholder="חיפוש אורח..." oninput="renderGuests()">
-      <div class="tabs">
-        <button data-f="all" class="active" onclick="setFilter('all')">כולם</button>
-        <button data-f="out" onclick="setFilter('out')">טרם הגיעו</button>
-        <button data-f="in" onclick="setFilter('in')">הגיעו</button>
-      </div>
-      <div id="guestList"></div>
-    </div>
-
-    <div class="row">
-      <button class="btn secondary" onclick="exportCSV()">ייצוא נוכחות</button>
-      <button class="btn danger" onclick="deleteEvent()">סיום ומחיקת האירוע</button>
-    </div>
-  </section>
-</main>
-
-<div class="toast" id="toast"></div>
+    <main class="main" id="main"><div class="loading"><div class="spinner"></div>טוען…</div></main>
+  </div>
+</div>
+<div class="toasts" id="toasts"></div>
 
 <script>
-const KEY = 'attendance_events_v1';
-let events = load();
-let currentId = null;
-let filter = 'all';
+'use strict';
+/* =====================================================================
+   הגדרות Firebase — הדביקו כאן את הפרטים מ-Firebase Console:
+   Project settings → General → Your apps → SDK setup and configuration → Config
+   ===================================================================== */
+const firebaseConfig = {
+  apiKey: "PASTE_API_KEY",
+  authDomain: "PASTE_PROJECT.firebaseapp.com",
+  databaseURL: "https://PASTE_PROJECT-default-rtdb.firebaseio.com",
+  projectId: "PASTE_PROJECT",
+  appId: "PASTE_APP_ID"
+};
+/* כל נתוני המערכת נשמרים תחת הענף הזה במסד, בנפרד מנתונים של מערכות אחרות */
+const ROOT = 'attendanceApp';
 
-function load() {
-  try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { return []; }
-}
-function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(events)); }
-  catch (e) { toast('שגיאה בשמירה במכשיר'); }
-}
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-function esc(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200);
-}
-function cur() { return events.find(e => e.id === currentId); }
+/* ============ Utilities ============ */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const genId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const normName = s => String(s ?? '').replace(/[‎‏‪-‮]/g, '').replace(/\s+/g, ' ').trim();
+const keyOf = (f, l) => (normName(f) + '|' + normName(l)).toLowerCase();
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const collator = new Intl.Collator('he', { sensitivity: 'base', numeric: true });
+const fmtNum = n => Number(n || 0).toLocaleString('he-IL');
+const fmtPct = n => (Math.round((n || 0) * 10) / 10).toLocaleString('he-IL', { maximumFractionDigits: 1 }) + '%';
+const pad2 = n => String(n).padStart(2, '0');
+const todayStr = () => { const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
+const parseDate = s => { if (!s || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null; const [y, m, d] = s.split('-').map(Number); const dt = new Date(y, m - 1, d); return dt.getMonth() === m - 1 ? dt : null; };
+const fmtDate = s => { const d = parseDate(s); return d ? d.toLocaleDateString('he-IL', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; };
+const fmtTime = ts => ts ? new Date(ts).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : '';
+const MONTHS = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+const fmtMonth = ym => { const [y, m] = ym.split('-').map(Number); return MONTHS[m - 1] + ' ' + y; };
+const safeFile = s => String(s || 'export').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80) || 'export';
+const ICON = {
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  x: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
+  dl: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>',
+  up: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 16V5M7 9.5L12 4.5l5 5"/><path d="M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>',
+  more: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4 4-6 8-6s7.2 2 8 6"/></svg>',
+  cal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  reset: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><path d="M4 4v6h6"/><path d="M4.5 15a8 8 0 1 0 1.9-8.3L4 10"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9l-6-6z"/><path d="M14 3v6h6"/></svg>'
+};
 
-/* ---------- אירועים ---------- */
-function createEvent() {
-  const name = document.getElementById('newName').value.trim();
-  const date = document.getElementById('newDate').value;
-  if (!name) return toast('יש להזין שם לאירוע');
-  const ev = { id: uid(), name, date, guests: [] };
-  events.unshift(ev); save();
-  document.getElementById('newName').value = '';
-  openEvent(ev.id);
+/* ============ State ============ */
+const S = {
+  db: null, user: null, dl: null, canWrite: true, isOwner: false, me: null,
+  events: new Map(), att: new Map(), overlay: new Map(),
+  settings: { goal: 70, orgName: '', defaultSort: 'last' },
+  ready: { events: false, att: false },
+  version: 0
+};
+const allReady = () => S.ready.events && S.ready.att;
+
+/* ============ Toast / banner / modal / menu ============ */
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type; el.textContent = msg;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), type === 'error' ? 5000 : 2600);
 }
+let globalBanner = null;
+function setBanner(type, html) { globalBanner = html ? { type, html } : null; const b = $('#g-banner'); if (b) b.outerHTML = bannerHtml(); }
+function bannerHtml() { return globalBanner ? `<div id="g-banner" class="banner ${globalBanner.type}">${globalBanner.html}</div>` : '<div id="g-banner"></div>'; }
 
-function renderEvents() {
-  const el = document.getElementById('eventsList');
-  if (!events.length) { el.innerHTML = '<div class="empty">אין עדיין אירועים</div>'; return; }
-  el.innerHTML = events.map(ev => {
-    const inC = ev.guests.filter(g => g.in).length;
-    const d = ev.date ? new Date(ev.date).toLocaleDateString('he-IL') : '';
-    return `<div class="event" onclick="openEvent('${ev.id}')">
-      <div><b>${esc(ev.name)}</b><br><small>${d}</small></div>
-      <small>${inC}/${ev.guests.length} הגיעו</small>
-    </div>`;
-  }).join('');
-}
-
-function openEvent(id) {
-  currentId = id; filter = 'all';
-  document.getElementById('home').classList.add('hidden');
-  document.getElementById('eventView').classList.remove('hidden');
-  document.getElementById('backBtn').classList.remove('hidden');
-  document.getElementById('title').textContent = cur().name;
-  document.getElementById('search').value = '';
-  setFilter('all');
-  window.scrollTo(0, 0);
-}
-
-function showHome() {
-  currentId = null;
-  document.getElementById('home').classList.remove('hidden');
-  document.getElementById('eventView').classList.add('hidden');
-  document.getElementById('backBtn').classList.add('hidden');
-  document.getElementById('title').textContent = 'ניהול נוכחות באירועים';
-  renderEvents();
-}
-
-function deleteEvent() {
-  const ev = cur();
-  if (!confirm(`למחוק את "${ev.name}" ואת כל רשימת האורחים שלו?`)) return;
-  events = events.filter(e => e.id !== currentId); save();
-  toast('האירוע נמחק');
-  showHome();
-}
-
-/* ---------- אורחים ---------- */
-function addGuest() {
-  const f = document.getElementById('addFirst').value.trim();
-  const l = document.getElementById('addLast').value.trim();
-  if (!f && !l) return toast('יש להזין שם');
-  cur().guests.push({ id: uid(), first: f, last: l, in: false, time: null });
-  save();
-  document.getElementById('addFirst').value = '';
-  document.getElementById('addLast').value = '';
-  renderGuests(); toast('האורח נוסף');
-}
-
-function toggle(gid) {
-  const g = cur().guests.find(x => x.id === gid);
-  g.in = !g.in;
-  g.time = g.in ? new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' }) : null;
-  save(); renderGuests();
-}
-
-function setFilter(f) {
-  filter = f;
-  document.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('active', b.dataset.f === f));
-  renderGuests();
-}
-
-function renderGuests() {
-  const ev = cur(); if (!ev) return;
-  const total = ev.guests.length;
-  const inC = ev.guests.filter(g => g.in).length;
-  const pct = total ? Math.round(inC / total * 100) : 0;
-  document.getElementById('sTotal').textContent = total;
-  document.getElementById('sIn').textContent = inC;
-  document.getElementById('sPct').textContent = pct + '%';
-  document.getElementById('sBar').style.width = pct + '%';
-
-  const q = document.getElementById('search').value.trim().toLowerCase();
-  let list = ev.guests.filter(g => {
-    if (filter === 'in' && !g.in) return false;
-    if (filter === 'out' && g.in) return false;
-    if (q && !(`${g.first} ${g.last}`.toLowerCase().includes(q))) return false;
-    return true;
+function openModal({ title, body = '', actions = [], wide = false, onOpen }) {
+  const ov = document.createElement('div');
+  ov.className = 'overlay';
+  ov.innerHTML = `<div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true">
+    <div class="modal-head"><h2>${esc(title)}</h2><button class="icon-btn" data-x aria-label="סגירה">${ICON.x}</button></div>
+    <div class="modal-body"></div><div class="modal-foot"></div></div>`;
+  const bodyEl = $('.modal-body', ov);
+  if (typeof body === 'string') bodyEl.innerHTML = body; else bodyEl.appendChild(body);
+  const foot = $('.modal-foot', ov);
+  let closed = false;
+  const close = () => { if (closed) return; closed = true; ov.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = e => { if (e.key === 'Escape' && !ov.dataset.busy) close(); };
+  document.addEventListener('keydown', onKey);
+  actions.forEach(a => {
+    const b = document.createElement('button');
+    b.className = 'btn ' + (a.cls || ''); b.textContent = a.label;
+    if (a.id) b.id = a.id;
+    b.onclick = async () => {
+      if (!a.onClick) return close();
+      b.disabled = true;
+      try { const r = await a.onClick({ close, el: ov, body: bodyEl, btn: b }); if (r !== false && !a.keepOpen) close(); }
+      catch (e) { console.error(e); toast(e.message || 'אירעה שגיאה', 'error'); }
+      finally { b.disabled = false; }
+    };
+    foot.appendChild(b);
   });
-  list.sort((a, b) => (a.last + a.first).localeCompare(b.last + b.first, 'he'));
-
-  const el = document.getElementById('guestList');
-  if (!total) { el.innerHTML = '<div class="empty">אין אורחים עדיין. העלה קובץ או הוסף ידנית.</div>'; return; }
-  if (!list.length) { el.innerHTML = '<div class="empty">לא נמצאו אורחים</div>'; return; }
-  el.innerHTML = list.map(g => `
-    <div class="guest ${g.in ? 'in' : ''}" onclick="toggle('${g.id}')">
-      <div><div>${esc(g.first)} ${esc(g.last)}</div>${g.in ? `<div class="time">הגיע/ה ב-${g.time}</div>` : ''}</div>
-      <div class="check">${g.in ? '✓' : ''}</div>
-    </div>`).join('');
+  if (!actions.length) foot.remove();
+  $('[data-x]', ov).onclick = () => { if (!ov.dataset.busy) close(); };
+  ov.addEventListener('mousedown', e => { if (e.target === ov && !ov.dataset.busy) close(); });
+  document.body.appendChild(ov);
+  onOpen?.({ el: ov, body: bodyEl, close });
+  setTimeout(() => { const f = $('input:not([type=checkbox]):not([type=file]),select,textarea', bodyEl); f?.focus(); }, 30);
+  return { el: ov, body: bodyEl, close };
 }
-
-/* ---------- ייבוא קובץ ---------- */
-function importFile(input) {
-  const file = input.files[0]; if (!file) return;
-  if (typeof XLSX === 'undefined') { toast('ספריית האקסל לא נטענה — בדוק חיבור לאינטרנט'); return; }
-  const isCSV = /\.csv$/i.test(file.name);
-  const reader = new FileReader();
-  reader.onload = e => {
-    try {
-      let wb;
-      if (isCSV) {
-        const buf = new Uint8Array(e.target.result);
-        let text = new TextDecoder('utf-8').decode(buf);
-        if (text.includes('�')) text = new TextDecoder('windows-1255').decode(buf); // קובץ עברית ישן מאקסל
-        wb = XLSX.read(text.replace(/^﻿/, ''), { type: 'string' });
-      } else {
-        wb = XLSX.read(e.target.result, { type: 'array' });
-      }
-      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, defval: '' });
-      addRows(rows);
-    } catch (err) { toast('לא הצלחתי לקרוא את הקובץ'); }
-    input.value = '';
+function confirmDialog({ title, message, confirmLabel = 'אישור', danger = false, typeToConfirm = null }) {
+  return new Promise(resolve => {
+    let done = false;
+    const body = `<p style="margin:0">${message}</p>${typeToConfirm ? `<div class="field" style="margin-top:14px"><label>להמשך הקלידו <b>${esc(typeToConfirm)}</b></label><input class="input" id="cf-type" autocomplete="off"></div><div class="err-msg" id="cf-err"></div>` : ''}`;
+    const m = openModal({ title, body, actions: [
+      { label: confirmLabel, cls: danger ? 'danger' : 'primary', onClick: ({ body }) => {
+        if (typeToConfirm && $('#cf-type', body).value.trim() !== typeToConfirm) { $('#cf-err', body).textContent = 'הטקסט אינו תואם.'; return false; }
+        done = true; resolve(true);
+      } },
+      { label: 'ביטול', onClick: () => { done = true; resolve(false); } }
+    ] });
+    const obs = new MutationObserver(() => { if (!document.body.contains(m.el)) { obs.disconnect(); if (!done) resolve(false); } });
+    obs.observe(document.body, { childList: true });
+  });
+}
+function progressModal(title) {
+  const m = openModal({ title, body: `<div id="pm-text" class="muted">מתחיל…</div><div class="progress"><i id="pm-bar" style="width:0"></i></div>` });
+  m.el.dataset.busy = '1'; $('[data-x]', m.el).style.visibility = 'hidden';
+  return {
+    set(text, frac) { $('#pm-text', m.el).textContent = text; if (frac != null) $('#pm-bar', m.el).style.width = Math.round(frac * 100) + '%'; },
+    close() { delete m.el.dataset.busy; m.close(); }
   };
-  reader.readAsArrayBuffer(file);
+}
+let openMenuEl = null;
+function closeMenu() { openMenuEl?.remove(); openMenuEl = null; }
+function showMenu(anchor, items) {
+  closeMenu();
+  const m = document.createElement('div'); m.className = 'menu';
+  items.forEach(it => {
+    if (it === '-') { m.appendChild(document.createElement('hr')); return; }
+    const b = document.createElement('button');
+    if (it.danger) b.className = 'danger';
+    b.innerHTML = (it.icon || '') + '<span>' + esc(it.label) + '</span>';
+    b.onclick = e => { e.stopPropagation(); closeMenu(); it.onClick(); };
+    m.appendChild(b);
+  });
+  document.body.appendChild(m);
+  const r = anchor.getBoundingClientRect();
+  const w = m.offsetWidth, h = m.offsetHeight;
+  let left = r.left; if (left + w > innerWidth - 8) left = innerWidth - w - 8; if (left < 8) left = 8;
+  let top = r.bottom + 6; if (top + h > innerHeight - 8) top = Math.max(8, r.top - h - 6);
+  m.style.left = left + 'px'; m.style.top = top + 'px';
+  openMenuEl = m;
+  setTimeout(() => document.addEventListener('click', closeMenu, { once: true }), 0);
 }
 
-function addRows(rows) {
-  rows = rows.map(r => r.map(c => String(c).trim())).filter(r => r.some(c => c));
-  if (!rows.length) return toast('הקובץ ריק');
-
-  let fi = 0, li = 1, start = 0;
-  const head = rows[0].map(c => c.toLowerCase());
-  const isHeader = head.some(c => /שם|name|first|last|משפחה/.test(c));
-  if (isHeader) {
-    start = 1;
-    const f = head.findIndex(c => /פרטי|first/.test(c));
-    const l = head.findIndex(c => /משפחה|last|surname/.test(c));
-    if (f >= 0) fi = f;
-    if (l >= 0) li = l; else if (f < 0) li = -1; // עמודת "שם" אחת בלבד
+/* ============ Platform ============ */
+const use = name => (window.claude && typeof window.claude.use === 'function') ? window.claude.use(name).catch(() => null) : Promise.resolve(null);
+async function withRetry(fn, tries = 4) {
+  for (let t = 0; ; t++) {
+    try { return await fn(); }
+    catch (e) {
+      const c = e && e.code;
+      if ((c === 'unavailable' || c === 'resource_exhausted') && t < tries) { await sleep(500 * (t + 1) + Math.random() * 500); continue; }
+      throw e;
+    }
   }
+}
+function dbErrText(e) {
+  const c = e && e.code;
+  if (c === 'quota_exceeded') return 'מסד הנתונים הגיע למגבלת הנפח. מחקו אירועים או אורחים ישנים ונסו שוב.';
+  if (c === 'invalid_argument') return S.canWrite ? 'הפעולה נדחתה על ידי מסד הנתונים.' : 'אין לכם הרשאת עריכה בנתונים אלה.';
+  if (c === 'revoked') return 'הגישה לנתונים הופסקה.';
+  return 'שגיאת חיבור למסד הנתונים. נסו שוב בעוד רגע.';
+}
+const chains = new Map();
+function serial(path, fn) {
+  const prev = chains.get(path) || Promise.resolve();
+  const p = prev.catch(() => {}).then(fn);
+  chains.set(path, p);
+  return p;
+}
+async function pool(items, n, fn, onProg) {
+  let i = 0, done = 0;
+  const workers = Array.from({ length: Math.min(n, items.length) }, async () => {
+    while (i < items.length) { const idx = i++; await withRetry(() => fn(items[idx], idx)); done++; onProg && onProg(done, items.length); }
+  });
+  await Promise.all(workers);
+}
+const refEvent = id => S.db.doc('events/' + id);
+const refAtt = id => S.db.doc('attendance/' + id);
 
-  const ev = cur();
-  const existing = new Set(ev.guests.map(g => (g.first + '|' + g.last).toLowerCase()));
-  let added = 0, dup = 0;
-  for (const r of rows.slice(start)) {
-    let first = r[fi] || '', last = li >= 0 ? (r[li] || '') : '';
-    if (li < 0 || (!last && first.includes(' '))) { // שם מלא בעמודה אחת
-      const parts = first.split(/\s+/); first = parts.shift(); last = parts.join(' ');
+/* ============ Derived data ============ */
+function presentMap(eid) {
+  const base = S.att.get(eid) || {};
+  const ov = S.overlay.get(eid);
+  return ov ? Object.assign({}, base, ov) : base;
+}
+function evStats(ev) {
+  if (ev.closed) { const f = ev.final || {}; const total = f.total || 0, present = f.present || 0; return { total, present, absent: total - present, rate: total ? present / total * 100 : 0 }; }
+  const ids = (ev.guests || []).map(g => g.id);
+  const p = presentMap(ev.id);
+  let present = 0;
+  for (const g of ids) if (p[g]) present++;
+  const total = ids.length;
+  return { total, present, absent: total - present, rate: total ? present / total * 100 : 0 };
+}
+function sortedEvents(dir = 'desc') {
+  const arr = [...S.events.values()];
+  arr.sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.time || '').localeCompare(b.time || '') || (a.createdAt || 0) - (b.createdAt || 0));
+  return dir === 'desc' ? arr.reverse() : arr;
+}
+function totals(events) {
+  let invited = 0, present = 0, rateSum = 0, withGuests = 0;
+  for (const ev of events) {
+    const s = evStats(ev);
+    invited += s.total; present += s.present;
+    if (s.total) { rateSum += s.rate; withGuests++; }
+  }
+  return { events: events.length, invited, present, absent: invited - present, overall: invited ? present / invited * 100 : 0, avg: withGuests ? rateSum / withGuests : 0 };
+}
+function guestName(g) { return g ? (normName(g.first) + ' ' + normName(g.last)).trim() : ''; }
+const newGuestId = () => 'g' + Math.random().toString(36).slice(2, 10);
+const eventKeys = ev => new Set((ev && ev.guests || []).map(g => keyOf(g.first, g.last)));
+/* ============ Attendance write queue ============ */
+const WQ = new Map();
+function setPresence(eid, gid, present) {
+  if (!S.canWrite) { toast('אין לכם הרשאה לעדכן נוכחות', 'error'); return; }
+  const val = present ? Date.now() : false;
+  let ov = S.overlay.get(eid); if (!ov) { ov = {}; S.overlay.set(eid, ov); }
+  ov[gid] = val;
+  let q = WQ.get(eid); if (!q) { q = { busy: false, pending: {} }; WQ.set(eid, q); }
+  q.pending[gid] = val;
+  changed();
+  if (!q.busy) flushAttendance(eid);
+}
+async function flushAttendance(eid) {
+  const q = WQ.get(eid); q.busy = true;
+  try {
+    while (Object.keys(q.pending).length) {
+      const batch = q.pending; q.pending = {};
+      try {
+        await withRetry(() => refAtt(eid).update({ present: batch, updatedAt: Date.now() }), 2);
+      } catch (e) {
+        if (e && e.code === 'invalid_argument' && S.canWrite) {
+          try { await refAtt(eid).set({ present: Object.assign({}, S.att.get(eid) || {}, batch), updatedAt: Date.now() }); }
+          catch (e2) { revertBatch(eid, batch); toast(dbErrText(e2), 'error'); continue; }
+        } else { revertBatch(eid, batch); toast(dbErrText(e), 'error'); continue; }
+      }
+      const base = Object.assign({}, S.att.get(eid) || {}, batch);
+      S.att.set(eid, base);
+      const ov = S.overlay.get(eid);
+      if (ov) { for (const k in batch) if (ov[k] === batch[k] && !(k in q.pending)) delete ov[k]; }
+    }
+  } finally { q.busy = false; changed(); }
+}
+function revertBatch(eid, batch) {
+  const ov = S.overlay.get(eid); if (!ov) return;
+  for (const k in batch) delete ov[k];
+  changed();
+}
+
+/* ============ Change scheduling ============ */
+let rafPending = false;
+function changed() {
+  S.version++;
+  if (rafPending) return;
+  rafPending = true;
+  requestAnimationFrame(() => { rafPending = false; try { current && current.update && current.update(); } catch (e) { console.error(e); } updateSideFoot(); });
+}
+
+/* ============ Charts ============ */
+function chartsReady() { return !!window.Chart; }
+function setupChartDefaults() {
+  if (!window.Chart) return;
+  Chart.defaults.font.family = "Heebo, system-ui, sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = '#667085';
+  Chart.defaults.borderColor = '#EEF0F3';
+}
+const NAVY = '#24396A', NAVY_LIGHT = '#A0AEC8', AMBER = '#E59E2C';
+function goalLinePlugin(getGoal, axis) {
+  return { id: 'goalLine', afterDatasetsDraw(chart) {
+    const g = getGoal(); if (!g) return;
+    const sc = chart.scales[axis]; if (!sc) return;
+    const ctx = chart.ctx, a = chart.chartArea; ctx.save();
+    ctx.strokeStyle = AMBER; ctx.setLineDash([5, 4]); ctx.lineWidth = 1.5; ctx.beginPath();
+    if (axis === 'x') { const x = sc.getPixelForValue(g); ctx.moveTo(x, a.top); ctx.lineTo(x, a.bottom); }
+    else { const y = sc.getPixelForValue(g); ctx.moveTo(a.left, y); ctx.lineTo(a.right, y); }
+    ctx.stroke(); ctx.restore();
+  } };
+}
+const trunc = (s, n) => (s = String(s || '')).length > n ? s.slice(0, n - 1) + '…' : s;
+
+/* ============ Import (CSV / Excel) ============ */
+const HEAD = {
+  first: ['שם פרטי','פרטי','first name','firstname','first','given name','givenname','fname','forename','first_name'],
+  last: ['שם משפחה','משפחה','last name','lastname','last','surname','family name','familyname','lname','last_name'],
+  full: ['שם מלא','full name','fullname','name','שם','שם האורח','שם אורח','guest','guest name','אורח','מוזמן','שם המוזמן','שם ושם משפחה']
+};
+const normHead = s => String(s ?? '').toLowerCase().replace(/[_\-.:*"'״׳]+/g, ' ').replace(/\s+/g, ' ').trim();
+const HSET = { first: new Set(HEAD.first.map(normHead)), last: new Set(HEAD.last.map(normHead)), full: new Set(HEAD.full.map(normHead)) };
+function detectColumns(rows) {
+  for (let r = 0; r < Math.min(rows.length, 10); r++) {
+    const row = (rows[r] || []).map(normHead);
+    let f = -1, l = -1, fu = -1;
+    row.forEach((c, i) => {
+      if (!c) return;
+      if (f < 0 && HSET.first.has(c)) f = i;
+      else if (l < 0 && HSET.last.has(c)) l = i;
+      else if (fu < 0 && HSET.full.has(c)) fu = i;
+    });
+    if (f >= 0 && l >= 0) return { headerRow: r, mode: 'split', first: f, last: l };
+    if (f < 0 && l >= 0 && fu >= 0) return { headerRow: r, mode: 'split', first: fu, last: l };
+    if (f >= 0 && l < 0) return { headerRow: r, mode: 'split', first: f, last: f + 1 < row.length ? f + 1 : -1 };
+    if (fu >= 0) return { headerRow: r, mode: 'full', full: fu };
+    if (l >= 0) return { headerRow: r, mode: 'split', first: l > 0 ? l - 1 : -1, last: l };
+  }
+  const cols = [];
+  rows.slice(0, 25).forEach(row => (row || []).forEach((c, i) => { if (String(c).trim() && !cols.includes(i)) cols.push(i); }));
+  cols.sort((a, b) => a - b);
+  if (cols.length >= 2) return { headerRow: -1, mode: 'split', first: cols[0], last: cols[1] };
+  return { headerRow: -1, mode: 'full', full: cols[0] ?? 0 };
+}
+function buildImportItems(rows, map, existingInEvent) {
+  const items = [], seenKeys = new Set();
+  const start = map.headerRow >= 0 ? map.headerRow + 1 : 0;
+  for (let r = start; r < rows.length; r++) {
+    const row = rows[r] || [];
+    let first = '', last = '';
+    if (map.mode === 'full') {
+      const full = normName(row[map.full]);
+      if (!full) { if (row.every(c => !String(c).trim())) continue; }
+      const parts = full.split(' ').filter(Boolean);
+      first = parts.shift() || ''; last = parts.join(' ');
+    } else {
+      first = map.first >= 0 ? normName(row[map.first]) : '';
+      last = map.last >= 0 ? normName(row[map.last]) : '';
     }
     if (!first && !last) continue;
-    const k = (first + '|' + last).toLowerCase();
-    if (existing.has(k)) { dup++; continue; }
-    existing.add(k);
-    ev.guests.push({ id: uid(), first, last, in: false, time: null });
-    added++;
+    const item = { row: r + 1, first, last, status: 'new', msg: '', existingId: null };
+    if (!first || !last) { item.status = 'error'; item.msg = !first ? 'חסר שם פרטי' : 'חסר שם משפחה'; items.push(item); continue; }
+    if (first.length > 60 || last.length > 60) { item.status = 'error'; item.msg = 'שם ארוך מדי'; items.push(item); continue; }
+    const k = keyOf(first, last);
+    if (seenKeys.has(k)) { item.status = 'dup'; item.msg = 'כפילות בקובץ — ידולג'; items.push(item); continue; }
+    seenKeys.add(k);
+    if (existingInEvent && existingInEvent.has(k)) { item.status = 'inevent'; item.msg = 'כבר ברשימת האירוע'; }
+    items.push(item);
   }
-  save(); renderGuests();
-  toast(`נוספו ${added} אורחים` + (dup ? ` (${dup} כפולים דולגו)` : ''));
+  return items;
+}
+async function parseGuestFile(file) {
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (!['csv', 'xlsx', 'xls', 'txt'].includes(ext)) throw new Error('סוג קובץ לא נתמך. יש להעלות קובץ CSV או Excel ‏(xlsx / xls).');
+  if (file.size > 15 * 1024 * 1024) throw new Error('הקובץ גדול מדי (מעל 15MB).');
+  if (!window.XLSX) throw new Error('רכיב קריאת הקבצים לא נטען. בדקו את החיבור לאינטרנט ורעננו.');
+  let wb;
+  const buf = await file.arrayBuffer();
+  if (ext === 'csv' || ext === 'txt') {
+    let text = new TextDecoder('utf-8').decode(buf);
+    if (text.includes(String.fromCharCode(0xFFFD))) { try { text = new TextDecoder('windows-1255').decode(buf); } catch (e) {} }
+    text = text.replace(/^﻿/, '');
+    wb = XLSX.read(text, { type: 'string', raw: true });
+  } else {
+    wb = XLSX.read(buf, { type: 'array' });
+  }
+  if (!wb.SheetNames.length) throw new Error('הקובץ ריק.');
+  return wb;
+}
+function sheetRows(wb, name) {
+  const ws = wb.Sheets[name];
+  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false, blankrows: false });
+}
+const colName = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; };
+
+function createImporter(container, { getExistingIds = () => null, onChange = () => {} } = {}) {
+  const st = { file: null, wb: null, sheet: null, rows: [], map: null, items: [], filter: 'all' };
+  container.innerHTML = `<input type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+    <div class="imp-drop drop" tabindex="0" role="button">${ICON.up}<div class="d-title">גררו לכאן קובץ או לחצו לבחירה</div><div class="d-sub">CSV, ‏Excel ‏(xlsx, xls) · עמודות שם פרטי ושם משפחה מזוהות אוטומטית</div></div>
+    <div class="imp-err err-msg" style="margin-top:8px"></div>
+    <div class="imp-body" hidden></div>`;
+  const input = $('input[type=file]', container), drop = $('.imp-drop', container), errEl = $('.imp-err', container), body = $('.imp-body', container);
+  drop.onclick = () => input.click();
+  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } };
+  ['dragenter', 'dragover'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(t => drop.addEventListener(t, e => { e.preventDefault(); drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) load(f); });
+  input.onchange = () => { const f = input.files[0]; if (f) load(f); input.value = ''; };
+
+  async function load(file) {
+    errEl.textContent = '';
+    try {
+      const wb = await parseGuestFile(file);
+      st.file = file; st.wb = wb; st.sheet = wb.SheetNames[0];
+      loadSheet();
+    } catch (e) { console.error(e); errEl.textContent = e.message || 'לא ניתן לקרוא את הקובץ.'; }
+  }
+  function loadSheet() {
+    st.rows = sheetRows(st.wb, st.sheet);
+    if (!st.rows.length) { errEl.textContent = 'הגיליון ריק — לא נמצאו שורות.'; }
+    st.map = detectColumns(st.rows);
+    recompute();
+  }
+  function recompute() {
+    st.items = buildImportItems(st.rows, st.map, getExistingIds());
+    render(); onChange(api.result());
+  }
+  function render() {
+    drop.hidden = true; body.hidden = false;
+    const hdr = st.map.headerRow >= 0 ? (st.rows[st.map.headerRow] || []) : [];
+    const ncols = Math.max(1, ...st.rows.slice(0, 50).map(r => (r || []).length));
+    const opts = sel => { let o = sel === -1 ? '<option value="-1" selected>—</option>' : '<option value="-1">—</option>'; for (let i = 0; i < ncols; i++) { const lab = String(hdr[i] || '').trim(); o += `<option value="${i}" ${i === sel ? 'selected' : ''}>עמודה ${colName(i)}${lab ? ' · ' + esc(trunc(lab, 22)) : ''}</option>`; } return o; };
+    const c = { new: 0, inevent: 0, dup: 0, error: 0 };
+    st.items.forEach(i => c[i.status]++);
+    const valid = c.new;
+    const shown = st.items.filter(i => st.filter === 'all' || (st.filter === 'ok' ? i.status === 'new' : (i.status === 'error' || i.status === 'dup' || i.status === 'inevent')));
+    const pillOf = i => i.status === 'new' ? '<span class="pill ok">ייובא</span>' : i.status === 'inevent' ? '<span class="pill no">כבר באירוע</span>' : i.status === 'dup' ? '<span class="pill warn">כפילות</span>' : `<span class="pill err">${esc(i.msg)}</span>`;
+    body.innerHTML = `
+      <div class="file-chip">${ICON.file}<span class="fn">${esc(st.file.name)}</span><span class="muted small">${fmtNum(st.rows.length)} שורות</span><button type="button" class="btn sm ghost" data-a="replace">החלפת קובץ</button></div>
+      <div class="map-row">
+        ${st.wb.SheetNames.length > 1 ? `<div class="field"><label>גיליון</label><select class="input" data-m="sheet">${st.wb.SheetNames.map(n => `<option ${n === st.sheet ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div>` : ''}
+        <div class="field"><label>מבנה השמות</label><select class="input" data-m="mode"><option value="split" ${st.map.mode === 'split' ? 'selected' : ''}>שם פרטי ושם משפחה בעמודות נפרדות</option><option value="full" ${st.map.mode === 'full' ? 'selected' : ''}>שם מלא בעמודה אחת</option></select></div>
+        ${st.map.mode === 'split' ? `<div class="field"><label>עמודת שם פרטי</label><select class="input" data-m="first">${opts(st.map.first)}</select></div><div class="field"><label>עמודת שם משפחה</label><select class="input" data-m="last">${opts(st.map.last)}</select></div>` : `<div class="field"><label>עמודת שם מלא</label><select class="input" data-m="full">${opts(st.map.full)}</select></div>`}
+        <div class="field"><label>שורת כותרת</label><select class="input" data-m="header"><option value="-1" ${st.map.headerRow < 0 ? 'selected' : ''}>אין — הנתונים מתחילים בשורה 1</option>${st.rows.slice(0, 10).map((r, i) => `<option value="${i}" ${st.map.headerRow === i ? 'selected' : ''}>שורה ${i + 1}</option>`).join('')}</select></div>
+      </div>
+      <div class="sum-chips">
+        <span class="pill ok">${fmtNum(c.new)} שמות תקינים</span>
+        ${c.inevent ? `<span class="pill no">${fmtNum(c.inevent)} כבר באירוע</span>` : ''}
+        ${c.dup ? `<span class="pill warn">${fmtNum(c.dup)} כפילויות</span>` : ''}
+        ${c.error ? `<span class="pill err">${fmtNum(c.error)} שגיאות</span>` : ''}
+      </div>
+      ${!st.items.length ? '<div class="banner warn">לא נמצאו שמות בקובץ לפי המיפוי הנוכחי. בדקו את בחירת העמודות.</div>' : ''}
+      ${st.items.length ? `<div class="seg" style="margin-bottom:10px"><button type="button" data-f="all" class="${st.filter === 'all' ? 'on' : ''}">הכל (${fmtNum(st.items.length)})</button><button type="button" data-f="ok" class="${st.filter === 'ok' ? 'on' : ''}">ייובאו (${fmtNum(valid)})</button><button type="button" data-f="bad" class="${st.filter === 'bad' ? 'on' : ''}">ידולגו (${fmtNum(c.error + c.dup + c.inevent)})</button></div>
+      <div class="preview"><table class="tbl"><thead><tr><th>שורה</th><th>שם פרטי</th><th>שם משפחה</th><th>סטטוס</th></tr></thead><tbody>
+        ${shown.slice(0, 400).map(i => `<tr class="${i.status === 'error' || i.status === 'dup' ? 'bad' : ''}"><td class="muted num">${i.row}</td><td>${esc(i.first) || '<span class="muted">—</span>'}</td><td>${esc(i.last) || '<span class="muted">—</span>'}</td><td>${pillOf(i)}</td></tr>`).join('')}
+        ${shown.length > 400 ? `<tr><td colspan="4" class="muted">ועוד ${fmtNum(shown.length - 400)} שורות…</td></tr>` : ''}
+      </tbody></table></div>` : ''}`;
+    $('[data-a=replace]', body).onclick = () => input.click();
+    $$('[data-f]', body).forEach(b => b.onclick = () => { st.filter = b.dataset.f; render(); });
+    $$('[data-m]', body).forEach(s => s.onchange = () => {
+      const k = s.dataset.m, v = s.value;
+      if (k === 'sheet') { st.sheet = v; loadSheet(); return; }
+      if (k === 'mode') { if (v === 'full') st.map = { headerRow: st.map.headerRow, mode: 'full', full: st.map.first >= 0 ? st.map.first : 0 }; else st.map = { headerRow: st.map.headerRow, mode: 'split', first: st.map.full ?? 0, last: (st.map.full ?? 0) + 1 }; }
+      else if (k === 'header') st.map.headerRow = Number(v);
+      else st.map[k] = Number(v);
+      recompute();
+    });
+  }
+  const api = {
+    result() {
+      const valid = st.items.filter(i => i.status === 'new');
+      return { loaded: !!st.file, valid, items: st.items, skipped: st.items.length - valid.length };
+    },
+    refresh() { if (st.file) recompute(); }
+  };
+  return api;
+}
+/** Turn import items into event guest records, skipping names already in the list. */
+function makeGuests(items, existingKeys) {
+  const keys = new Set(existingKeys || []), out = [];
+  for (const it of items) { const k = keyOf(it.first, it.last); if (keys.has(k)) continue; keys.add(k); out.push({ id: newGuestId(), first: it.first, last: it.last }); }
+  return out;
+}
+async function updateEventGuests(eid, mutate) {
+  return serial('events/' + eid, async () => {
+    const ev = S.events.get(eid); if (!ev) throw new Error('האירוע לא נמצא');
+    if (ev.closed) throw new Error('האירוע הסתיים — לא ניתן לשנות את הרשימה');
+    const before = ev.guests || [];
+    const after = mutate(before.slice());
+    if (after.length === before.length && after.every((x, i) => x === before[i])) return;
+    if (JSON.stringify(after).length > 230000) throw new Error('הרשימה גדולה מדי לאירוע אחד (מעל כ-5,000 אורחים).');
+    await withRetry(() => refEvent(eid).update({ guests: after, updatedAt: Date.now() }));
+    ev.guests = after; changed();
+  });
 }
 
-/* ---------- ייצוא ---------- */
-function exportCSV() {
-  const ev = cur();
-  const lines = [['שם פרטי', 'שם משפחה', 'הגיע', 'שעה']];
-  ev.guests.forEach(g => lines.push([g.first, g.last, g.in ? 'כן' : 'לא', g.time || '']));
-  const csv = '﻿' + lines.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-  a.download = `נוכחות - ${ev.name}.csv`;
-  a.click();
+/* ============ Manual entry ============ */
+/** Parse pasted names: one guest per line. "first last", "first,last" or "first<TAB>last". */
+function parsePasted(text) {
+  const rows = String(text || '').split(/\r?\n/).map(line => {
+    const t = line.replace(/[‎‏]/g, '').trim();
+    if (!t) return ['', ''];
+    if (/[\t,;]/.test(t)) { const parts = t.split(/[\t,;]+/).map(normName).filter(Boolean); return [parts[0] || '', parts.slice(1).join(' ')]; }
+    const parts = normName(t).split(' '); return [parts.shift() || '', parts.join(' ')];
+  });
+  return rows;
+}
+function pasteItems(text, existingKeys) {
+  return buildImportItems(parsePasted(text), { headerRow: -1, mode: 'split', first: 0, last: 1 }, existingKeys);
+}
+function pasteSummaryHtml(items) {
+  const c = { new: 0, inevent: 0, dup: 0, error: 0 }; items.forEach(i => c[i.status]++);
+  if (!items.length) return '<span class="muted small">הדביקו או הקלידו שמות — שם אחד בכל שורה</span>';
+  const bad = items.filter(i => i.status !== 'new').slice(0, 6).map(i => `<div class="small" style="color:var(--red)">שורה ${i.row}: ${esc((i.first + ' ' + i.last).trim() || '—')} — ${esc(i.msg)}</div>`).join('');
+  return `<div class="sum-chips"><span class="pill ok">${fmtNum(c.new)} יתווספו</span>${c.inevent ? `<span class="pill no">${fmtNum(c.inevent)} כבר באירוע</span>` : ''}${c.dup ? `<span class="pill warn">${fmtNum(c.dup)} כפילויות</span>` : ''}${c.error ? `<span class="pill err">${fmtNum(c.error)} שגויים</span>` : ''}</div>${bad}`;
+}
+/** Add guests to an existing event by hand: one at a time, or a pasted list. */
+function addGuestsDialog(eid) {
+  const ev0 = S.events.get(eid);
+  if (!ev0) return;
+  if (ev0.closed) return toast('האירוע הסתיים — לא ניתן להוסיף אורחים', 'error');
+  if (!S.canWrite) return toast('אין לכם הרשאת עריכה', 'error');
+  let mode = 'one', added = 0;
+  const m = openModal({ title: 'הוספת אורחים ידנית · ' + ev0.name, body: `
+      <div class="seg" style="margin-bottom:16px" id="ag-mode"><button type="button" data-m="one" class="on">אורח בודד</button><button type="button" data-m="many">כמה אורחים (הדבקת רשימה)</button></div>
+      <div data-p="one"><div class="form-grid">
+        <div class="field"><label>שם פרטי <span class="req">*</span></label><input class="input" name="first" maxlength="60" autocomplete="off"></div>
+        <div class="field"><label>שם משפחה <span class="req">*</span></label><input class="input" name="last" maxlength="60" autocomplete="off"></div>
+        <label class="full" style="display:flex;gap:9px;align-items:center;font-weight:500"><input type="checkbox" name="here" style="width:18px;height:18px;accent-color:var(--navy)"> האורח הגיע — סמנו אותו כנוכח</label>
+        <div class="full err-msg" data-err></div><div class="full help" id="ag-done"></div></div></div>
+      <div data-p="many" hidden>
+        <div class="field"><label>שם אחד בכל שורה</label><textarea class="input" id="ag-text" rows="8" placeholder="דוד כהן&#10;שרה לוי&#10;משה, בן דוד"></textarea><span class="help">שם פרטי ואז שם משפחה. לשמות משפחה של כמה מילים הפרידו בפסיק: "משה, בן דוד".</span></div>
+        <div id="ag-sum" style="margin-top:8px"></div></div>`,
+    actions: [
+      { label: 'הוספה', cls: 'primary', id: 'ag-go', keepOpen: true, onClick: async ({ body, close }) => {
+        const ev = S.events.get(eid); if (!ev || ev.closed) { close(); return; }
+        if (mode === 'one') {
+          const ok = await addOne(body); if (ok) { $('[name=first]', body).focus(); }
+          return;
+        }
+        const items = pasteItems($('#ag-text', body).value, eventKeys(ev)).filter(i => i.status === 'new');
+        if (!items.length) { toast('אין שמות תקינים להוספה', 'error'); return; }
+        try {
+          let n = 0;
+          await updateEventGuests(eid, cur => { const add = makeGuests(items, eventKeys({ guests: cur })); n = add.length; return cur.concat(add); });
+          toast(`נוספו ${fmtNum(n)} אורחים`, 'success'); close();
+        } catch (e) { toast(e.code ? dbErrText(e) : e.message, 'error'); }
+      } },
+      { label: 'סגירה' }
+    ] });
+  const body = m.body;
+  async function addOne(body) {
+    const first = normName($('[name=first]', body).value), last = normName($('[name=last]', body).value), err = $('[data-err]', body);
+    err.textContent = '';
+    if (!first || !last) { err.textContent = 'יש להזין שם פרטי ושם משפחה.'; return false; }
+    if (first.length > 60 || last.length > 60) { err.textContent = 'השם ארוך מדי.'; return false; }
+    const ev = S.events.get(eid);
+    if (eventKeys(ev).has(keyOf(first, last))) { err.textContent = 'אורח זה כבר נמצא ברשימת האירוע.'; return false; }
+    try {
+      const g = { id: newGuestId(), first, last };
+      await updateEventGuests(eid, list => list.concat(g));
+      if ($('[name=here]', body).checked) setPresence(eid, g.id, true);
+      added++;
+      $('[name=first]', body).value = ''; $('[name=last]', body).value = '';
+      $('#ag-done', body).textContent = `✓ ${first} ${last} נוסף. נוספו ${fmtNum(added)} אורחים בחלון זה — אפשר להמשיך להוסיף.`;
+      return true;
+    } catch (e) { err.textContent = e.code ? dbErrText(e) : e.message; return false; }
+  }
+  $$('[name=first],[name=last]', body).forEach(i => i.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); if (i.name === 'first' && !$('[name=last]', body).value) $('[name=last]', body).focus(); else addOne(body).then(ok => ok && $('[name=first]', body).focus()); } }));
+  const txt = $('#ag-text', body);
+  const refresh = () => { const items = pasteItems(txt.value, eventKeys(S.events.get(eid))); $('#ag-sum', body).innerHTML = pasteSummaryHtml(items); const n = items.filter(i => i.status === 'new').length; $('#ag-go').textContent = n ? `הוספת ${fmtNum(n)} אורחים` : 'הוספה'; };
+  txt.addEventListener('input', refresh);
+  $$('#ag-mode button', body).forEach(b => b.onclick = () => {
+    mode = b.dataset.m;
+    $$('#ag-mode button', body).forEach(x => x.classList.toggle('on', x === b));
+    $$('[data-p]', body).forEach(p => p.hidden = p.dataset.p !== mode);
+    if (mode === 'many') { refresh(); txt.focus(); } else { $('#ag-go').textContent = 'הוספה'; $('[name=first]', body).focus(); }
+  });
 }
 
-document.getElementById('newDate').value = new Date().toISOString().slice(0, 10);
-renderEvents();
+/* ============ Exports ============ */
+async function saveFile(filename, data) {
+  if (!S.dl) { toast('הורדת קבצים אינה זמינה', 'error'); return false; }
+  try { await S.dl.save({ filename, data }); return true; }
+  catch (e) {
+    if (e && e.code === 'declined') return false;
+    if (e && e.code === 'rate_limited') { toast('חלון הורדה כבר פתוח — אשרו או סגרו אותו ונסו שוב.', 'error'); return false; }
+    toast('לא ניתן לשמור את הקובץ (' + (e && e.code || 'שגיאה') + ').', 'error'); return false;
+  }
+}
+function xlsxBook(sheets) {
+  const wb = XLSX.utils.book_new();
+  wb.Workbook = { Views: [{ RTL: true }] };
+  for (const sh of sheets) {
+    const ws = XLSX.utils.aoa_to_sheet(sh.rows);
+    ws['!cols'] = sh.cols || sh.rows[0].map(() => ({ wch: 16 }));
+    ws['!views'] = [{ RTL: true }];
+    XLSX.utils.book_append_sheet(wb, ws, sh.name.slice(0, 31));
+  }
+  return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+}
+const csvCell = v => { const s = String(v ?? ''); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+const toCsv = rows => '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+function eventRows(ev) {
+  const p = presentMap(ev.id);
+  const list = (ev.guests || []).map(g => ({ g, id: g.id, at: p[g.id] || null }));
+  list.sort((a, b) => collator.compare(a.g?.last || '', b.g?.last || '') || collator.compare(a.g?.first || '', b.g?.first || ''));
+  return [['שם פרטי', 'שם משפחה', 'נוכחות', 'שעת הגעה']].concat(list.map(x => [x.g?.first || '', x.g?.last || '', x.at ? 'נוכח' : 'נעדר', x.at ? fmtTime(x.at) : '']));
+}
+async function exportEvent(ev, kind) {
+  const base = safeFile(ev.name + ' ' + (ev.date || ''));
+  if (kind === 'csv') return saveFile(base + '.csv', toCsv(eventRows(ev)));
+  if (!window.XLSX) return toast('רכיב Excel לא נטען', 'error');
+  const s = evStats(ev);
+  const data = xlsxBook([
+    { name: 'רשימת נוכחות', rows: eventRows(ev), cols: [{ wch: 16 }, { wch: 18 }, { wch: 10 }, { wch: 11 }] },
+    { name: 'סיכום', rows: [['שדה', 'ערך'], ['שם האירוע', ev.name], ['תאריך', fmtDate(ev.date)], ['מיקום', ev.location || ''], ['סה״כ מוזמנים', s.total], ['נוכחים', s.present], ['נעדרים', s.absent], ['אחוז נוכחות', Math.round(s.rate * 10) / 10 + '%']], cols: [{ wch: 16 }, { wch: 34 }] }
+  ]);
+  return saveFile(base + '.xlsx', data);
+}
+
+/* ============ Views ============ */
+let current = null;
+const main = $('#main');
+
+const Dashboard = {
+  mount(el) {
+    el.innerHTML = `${bannerHtml()}
+      <div class="page-head"><div><h1>לוח בקרה</h1><p class="sub">תמונת מצב של הנוכחות בכל האירועים</p></div>
+      <div class="head-actions"><a class="btn primary" href="#create">${ICON.plus}אירוע חדש</a></div></div>
+      <div id="d-body"></div>`;
+    this.chart = null;
+  },
+  update() {
+    const body = $('#d-body'); if (!body) return;
+    if (!allReady()) { body.innerHTML = '<div class="loading"><div class="spinner"></div>טוען נתונים…</div>'; this.destroy(); return; }
+    const evs = sortedEvents('desc');
+    if (!evs.length) {
+      this.destroy();
+      body.innerHTML = `<div class="card"><div class="empty"><div class="e-ico">${ICON.cal}</div><h3>עדיין אין אירועים</h3><p>צרו אירוע ראשון, העלו רשימת מוזמנים מקובץ CSV או Excel והתחילו לסמן נוכחות בכניסה.</p><a class="btn primary" href="#create">${ICON.plus}יצירת אירוע ראשון</a></div></div>`;
+      return;
+    }
+    const t = totals(evs);
+    if (!$('#d-kpis')) {
+      body.innerHTML = `<section class="kpis" id="d-kpis"></section>
+        <section class="grid-2">
+          <div class="card"><div class="card-head"><h2>אחוז נוכחות לפי אירוע</h2><span class="hint" id="d-chart-hint"></span></div><div class="chart-box" id="d-chart-box"><canvas id="d-chart"></canvas></div></div>
+          <div class="card"><div class="card-head"><h2>אירועים אחרונים</h2><a href="#events" class="small">לכל האירועים</a></div><div id="d-recent"></div></div>
+        </section>`;
+    }
+    $('#d-kpis').innerHTML = `
+      <div class="kpi"><div class="k-label">סה״כ אירועים</div><div class="k-val">${fmtNum(t.events)}</div><div class="k-sub">${fmtNum(evs.filter(e => (e.date || '') >= todayStr()).length)} קרובים</div></div>
+      <div class="kpi"><div class="k-label">סה״כ מוזמנים</div><div class="k-val">${fmtNum(t.invited)}</div><div class="k-sub">בכל האירועים</div></div>
+      <div class="kpi"><div class="k-label">סה״כ נוכחים</div><div class="k-val">${fmtNum(t.present)}</div><div class="k-sub">${fmtNum(t.absent)} נעדרים</div></div>
+      <div class="kpi accent"><div class="k-label">אחוז נוכחות כולל</div><div class="k-val">${fmtPct(t.overall)}</div><div class="k-sub">נוכחים מתוך כלל המוזמנים</div></div>
+      <div class="kpi"><div class="k-label">ממוצע נוכחות לאירוע</div><div class="k-val">${fmtPct(t.avg)}</div><div class="k-sub">יעד: ${fmtPct(S.settings.goal)}</div></div>`;
+    const recent = evs.slice(0, 7);
+    $('#d-recent').innerHTML = `<table class="tbl cards"><thead><tr><th>אירוע</th><th>תאריך</th><th>נוכחות</th></tr></thead><tbody>
+      ${recent.map(ev => { const s = evStats(ev); return `<tr class="click" data-go="${ev.id}"><td class="lead"><span class="t-name">${esc(ev.name)}</span><div class="muted small">${fmtNum(s.present)} / ${fmtNum(s.total)} נוכחים</div></td><td data-label="תאריך" class="muted">${fmtDate(ev.date)}</td><td data-label="נוכחות">${rateCell(s.rate)}</td></tr>`; }).join('')}
+      </tbody></table>`;
+    $$('#d-recent [data-go]').forEach(tr => tr.onclick = () => location.hash = 'event-' + tr.dataset.go);
+    // Chart
+    const chartEvs = evs.slice(0, 15).reverse();
+    $('#d-chart-hint').textContent = evs.length > 15 ? '15 האירועים האחרונים' : '';
+    if (!chartsReady()) { $('#d-chart-box').innerHTML = '<div class="muted small">הגרף לא נטען.</div>'; return; }
+    const labels = chartEvs.map(e => trunc(e.name, 26) + ' · ' + fmtDate(e.date));
+    const data = chartEvs.map(e => Math.round(evStats(e).rate * 10) / 10);
+    const colors = data.map(v => v >= S.settings.goal ? NAVY : NAVY_LIGHT);
+    $('#d-chart-box').style.height = Math.max(220, chartEvs.length * 34 + 60) + 'px';
+    if (this.chart) { this.chart.data.labels = labels; this.chart.data.datasets[0].data = data; this.chart.data.datasets[0].backgroundColor = colors; this.chart.update('none'); return; }
+    this.chart = new Chart($('#d-chart'), {
+      type: 'bar',
+      data: { labels, datasets: [{ data, backgroundColor: colors, borderRadius: 4, barThickness: 18 }] },
+      options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: false,
+        plugins: { legend: { display: false }, tooltip: { rtl: true, textDirection: 'rtl', callbacks: { label: c => ' ' + c.parsed.x + '% נוכחות' } } },
+        scales: { x: { min: 0, max: 100, reverse: true, ticks: { callback: v => v + '%' } }, y: { position: 'right', grid: { display: false }, ticks: { color: '#344054' } } } },
+      plugins: [goalLinePlugin(() => S.settings.goal, 'x')]
+    });
+  },
+  destroy() { this.chart?.destroy(); this.chart = null; }
+};
+function rateCell(rate) { return `<div class="rate"><div class="bar"><i class="${rate < S.settings.goal ? 'low' : ''}" style="width:${Math.min(100, rate)}%"></i></div><b>${fmtPct(rate)}</b></div>`; }
+
+const EventsView = {
+  mount(el) {
+    this.q = ''; this.f = 'all';
+    el.innerHTML = `${bannerHtml()}
+      <div class="page-head"><div><h1>אירועים</h1><p class="sub">כל האירועים — קרובים והיסטוריים</p></div>
+      <div class="head-actions"><a class="btn primary" href="#create">${ICON.plus}אירוע חדש</a></div></div>
+      <div class="card"><div class="toolbar">
+        <div class="search">${ICON.search}<input class="input" id="ev-q" placeholder="חיפוש לפי שם אירוע או מיקום" autocomplete="off"></div>
+        <div class="seg" id="ev-f"><button data-f="all" class="on">הכל</button><button data-f="up">קרובים</button><button data-f="past">היסטוריים</button></div>
+      </div><div id="ev-list"></div></div>`;
+    $('#ev-q').oninput = e => { this.q = e.target.value.trim().toLowerCase(); this.update(); };
+    $$('#ev-f button').forEach(b => b.onclick = () => { this.f = b.dataset.f; $$('#ev-f button').forEach(x => x.classList.toggle('on', x === b)); this.update(); });
+  },
+  update() {
+    const box = $('#ev-list'); if (!box) return;
+    if (!S.ready.events || !S.ready.att) { box.innerHTML = '<div class="loading"><div class="spinner"></div>טוען…</div>'; return; }
+    const t = todayStr();
+    let evs = sortedEvents(this.f === 'up' ? 'asc' : 'desc');
+    if (this.f === 'up') evs = evs.filter(e => (e.date || '') >= t);
+    if (this.f === 'past') evs = evs.filter(e => (e.date || '') < t);
+    if (this.q) evs = evs.filter(e => (e.name || '').toLowerCase().includes(this.q) || (e.location || '').toLowerCase().includes(this.q));
+    if (!S.events.size) { box.innerHTML = `<div class="empty"><div class="e-ico">${ICON.cal}</div><h3>אין אירועים עדיין</h3><p>צרו אירוע חדש והעלו אליו רשימת מוזמנים.</p><a class="btn primary" href="#create">${ICON.plus}יצירת אירוע</a></div>`; return; }
+    if (!evs.length) { box.innerHTML = '<div class="list-empty">לא נמצאו אירועים התואמים לחיפוש.</div>'; return; }
+    box.innerHTML = `<div class="tbl-wrap"><table class="tbl cards"><thead><tr><th>שם האירוע</th><th>תאריך</th><th class="n">מוזמנים</th><th class="n">נוכחים</th><th class="n">נעדרים</th><th>אחוז נוכחות</th><th></th></tr></thead><tbody>
+      ${evs.map(ev => { const s = evStats(ev); const past = (ev.date || '') < t; return `<tr>
+        <td class="lead"><a class="ev-name" href="#event-${ev.id}">${esc(ev.name)}</a>${ev.location ? `<div class="muted small">${esc(ev.location)}</div>` : ''}</td>
+        <td data-label="תאריך"><span>${fmtDate(ev.date)}${ev.time ? ' · ' + esc(ev.time) : ''}</span> ${ev.closed ? '<span class="pill info" style="margin-inline-start:6px">הסתיים</span>' : past ? '<span class="pill no" style="margin-inline-start:6px">היסטורי</span>' : (ev.date === t ? '<span class="pill ok" style="margin-inline-start:6px">היום</span>' : '')}</td>
+        <td class="n" data-label="מוזמנים">${fmtNum(s.total)}</td><td class="n" data-label="נוכחים">${fmtNum(s.present)}</td><td class="n" data-label="נעדרים">${fmtNum(s.absent)}</td>
+        <td data-label="אחוז נוכחות">${rateCell(s.rate)}</td>
+        <td><div class="row-actions">
+          <a class="btn sm" href="#event-${ev.id}">פתיחה</a>
+          ${ev.closed ? '' : `<button class="icon-btn" title="הוספת אורחים ידנית" data-act="add" data-id="${ev.id}">${ICON.plus}</button>`}
+          <button class="icon-btn" title="עריכה" data-act="edit" data-id="${ev.id}">${ICON.edit}</button>
+          <button class="icon-btn" title="שכפול" data-act="dup" data-id="${ev.id}">${ICON.copy}</button>
+          <button class="icon-btn" title="מחיקה" data-act="del" data-id="${ev.id}">${ICON.trash}</button>
+        </div></td></tr>`; }).join('')}
+      </tbody></table></div>`;
+    $$('[data-act]', box).forEach(b => b.onclick = () => { const ev = S.events.get(b.dataset.id); if (!ev) return; ({ add: e => addGuestsDialog(e.id), edit: editEventDialog, dup: duplicateEventDialog, del: deleteEventDialog })[b.dataset.act](ev); });
+  }
+};
+
+/* ---- Event dialogs ---- */
+function eventFieldsHtml(ev = {}) {
+  return `<div class="form-grid">
+    <div class="field full"><label>שם האירוע <span class="req">*</span></label><input class="input" name="name" maxlength="120" value="${esc(ev.name || '')}" placeholder="לדוגמה: ערב גאלה שנתי"></div>
+    <div class="field"><label>תאריך <span class="req">*</span></label><input class="input" type="date" name="date" value="${esc(ev.date || '')}"></div>
+    <div class="field"><label>שעה</label><input class="input" type="time" name="time" value="${esc(ev.time || '')}"></div>
+    <div class="field full"><label>מיקום</label><input class="input" name="location" maxlength="120" value="${esc(ev.location || '')}" placeholder="אופציונלי"></div>
+    <div class="field full"><label>הערות</label><textarea class="input" name="notes" maxlength="1000" placeholder="אופציונלי">${esc(ev.notes || '')}</textarea></div>
+    <div class="field full"><div class="err-msg" data-err></div></div></div>`;
+}
+function readEventFields(root, excludeId) {
+  const get = n => $(`[name=${n}]`, root).value;
+  const v = { name: normName(get('name')), date: get('date'), time: get('time') || '', location: normName(get('location')), notes: String(get('notes') || '').trim() };
+  $$('.input', root).forEach(i => i.classList.remove('bad'));
+  let err = '';
+  if (!v.name) { err = 'יש להזין שם לאירוע.'; $('[name=name]', root).classList.add('bad'); }
+  else if (v.name.length < 2) { err = 'שם האירוע קצר מדי.'; $('[name=name]', root).classList.add('bad'); }
+  else if (!parseDate(v.date)) { err = 'יש לבחור תאריך תקין.'; $('[name=date]', root).classList.add('bad'); }
+  else if (v.time && !/^\d{2}:\d{2}$/.test(v.time)) { err = 'שעה לא תקינה.'; $('[name=time]', root).classList.add('bad'); }
+  else {
+    const clash = [...S.events.values()].find(e => e.id !== excludeId && e.date === v.date && (e.name || '').trim().toLowerCase() === v.name.toLowerCase());
+    if (clash) { err = 'כבר קיים אירוע בשם זה באותו תאריך. בחרו שם או תאריך אחר.'; $('[name=name]', root).classList.add('bad'); }
+  }
+  $('[data-err]', root).textContent = err;
+  return err ? null : v;
+}
+function editEventDialog(ev) {
+  if (!S.canWrite) return toast('אין לכם הרשאת עריכה', 'error');
+  openModal({ title: 'עריכת פרטי אירוע', body: eventFieldsHtml(ev), actions: [
+    { label: 'שמירה', cls: 'primary', onClick: async ({ body }) => {
+      const v = readEventFields(body, ev.id); if (!v) return false;
+      await serial('events/' + ev.id, () => withRetry(() => refEvent(ev.id).update(Object.assign({}, v, { updatedAt: Date.now() }))))
+        .catch(e => { throw new Error(dbErrText(e)); });
+      Object.assign(ev, v); changed(); toast('פרטי האירוע עודכנו', 'success');
+    } },
+    { label: 'ביטול' }
+  ] });
+}
+function duplicateEventDialog(ev) {
+  if (!S.canWrite) return toast('אין לכם הרשאת עריכה', 'error');
+  const copy = { name: ev.name + ' (עותק)', date: todayStr(), time: ev.time, location: ev.location, notes: ev.notes };
+  const canCopy = !ev.closed && (ev.guests || []).length;
+  openModal({ title: 'שכפול אירוע', body: `<p class="muted small" style="margin-top:0">ייווצר אירוע חדש עם רשומות נוכחות נפרדות. הנוכחות באירוע המקורי לא תושפע.</p>${eventFieldsHtml(copy)}
+      ${canCopy ? `<label style="display:flex;gap:9px;align-items:center;margin-top:4px;font-weight:500"><input type="checkbox" id="dup-guests" checked style="width:18px;height:18px;accent-color:var(--navy)"> העתקת רשימת המוזמנים (${fmtNum(ev.guests.length)} אורחים)</label>` : (ev.closed ? '<p class="help">האירוע המקורי הסתיים ושמות המוזמנים נמחקו — האירוע החדש ייווצר עם רשימה ריקה.</p>' : '')}`,
+    actions: [
+      { label: 'יצירת עותק', cls: 'primary', onClick: async ({ body }) => {
+        const v = readEventFields(body, null); if (!v) return false;
+        const cb = $('#dup-guests', body);
+        const guests = cb && cb.checked ? ev.guests.map(g => ({ id: newGuestId(), first: g.first, last: g.last })) : [];
+        const id = await createEvent(v, guests).catch(e => { throw new Error(dbErrText(e)); });
+        toast('האירוע שוכפל', 'success'); location.hash = 'event-' + id;
+      } },
+      { label: 'ביטול' }
+    ] });
+}
+async function deleteEventDialog(ev) {
+  if (!S.canWrite) return toast('אין לכם הרשאת עריכה', 'error');
+  const ok = await confirmDialog({ title: 'מחיקת אירוע', message: `למחוק את <b>${esc(ev.name)}</b> לגמרי, כולל השמות והנתונים הסטטיסטיים? האירוע לא יופיע יותר בדוחות. לא ניתן לבטל פעולה זו.`, confirmLabel: 'מחיקה', danger: true });
+  if (!ok) return;
+  try {
+    await serial('events/' + ev.id, () => withRetry(() => refEvent(ev.id).delete()));
+    await withRetry(() => refAtt(ev.id).delete());
+    S.events.delete(ev.id); S.att.delete(ev.id); changed();
+    toast('האירוע נמחק', 'success');
+    if (location.hash === '#event-' + ev.id) location.hash = 'events';
+  } catch (e) { toast(dbErrText(e), 'error'); }
+}
+async function finishEventDialog(ev) {
+  if (!ev || ev.closed) return;
+  if (!S.canWrite) return toast('אין לכם הרשאת עריכה', 'error');
+  const s = evStats(ev);
+  openModal({ title: 'סיום האירוע', body: `
+      <p style="margin-top:0">בסיום האירוע <b>כל שמות המוזמנים יימחקו לצמיתות</b>. יישמרו רק המספרים לצורך הדוחות:</p>
+      <div class="mini-kv"><div><span>מוזמנים</span><b>${fmtNum(s.total)}</b></div><div><span>נוכחים</span><b>${fmtNum(s.present)}</b></div><div><span>נעדרים</span><b>${fmtNum(s.absent)}</b></div><div><span>אחוז נוכחות</span><b>${fmtPct(s.rate)}</b></div></div>
+      <p class="help" style="margin:0 0 10px">רוצים לשמור עותק של הרשימה לפני המחיקה? הורידו אותה עכשיו:</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="fe-x">${ICON.dl}הורדה ל-Excel</button><button class="btn sm" type="button" id="fe-c">${ICON.dl}הורדה ל-CSV</button></div>`,
+    onOpen: ({ body }) => { $('#fe-x', body).onclick = () => exportEvent(ev, 'xlsx'); $('#fe-c', body).onclick = () => exportEvent(ev, 'csv'); },
+    actions: [
+      { label: 'סיום ומחיקת השמות', cls: 'danger', onClick: async ({ el }) => {
+        el.dataset.busy = '1';
+        try {
+          for (let i = 0; i < 50 && (WQ.get(ev.id)?.busy); i++) await sleep(100);
+          const fin = evStats(ev);
+          const now = Date.now();
+          await serial('events/' + ev.id, () => withRetry(() => refEvent(ev.id).update({ closed: true, closedAt: now, final: { total: fin.total, present: fin.present }, guests: [], updatedAt: now })));
+          Object.assign(ev, { closed: true, closedAt: now, final: { total: fin.total, present: fin.present }, guests: [] });
+          await withRetry(() => refAtt(ev.id).delete()).catch(() => {});
+          S.att.delete(ev.id); S.overlay.delete(ev.id); changed();
+          toast('האירוע הסתיים והשמות נמחקו', 'success');
+        } catch (e) { toast(dbErrText(e), 'error'); return false; }
+        finally { delete el.dataset.busy; }
+      } },
+      { label: 'ביטול' }
+    ] });
+}
+async function createEvent(v, guests) {
+  const id = genId('e');
+  const now = Date.now();
+  if (JSON.stringify(guests).length > 230000) throw new Error('הרשימה גדולה מדי לאירוע אחד (מעל כ-5,000 אורחים).');
+  const data = Object.assign({}, v, { guests, closed: false, createdAt: now, updatedAt: now });
+  await withRetry(() => refAtt(id).set({ present: {}, updatedAt: now }));
+  await withRetry(() => refEvent(id).set(data));
+  S.att.set(id, {}); S.events.set(id, Object.assign({ id }, data)); changed();
+  return id;
+}
+
+/* ---- Create view ---- */
+const CreateView = {
+  mount(el) {
+    this.tab = 'file'; this.copyFrom = ''; this.importRes = null; this.manualItems = [];
+    el.innerHTML = `${bannerHtml()}
+      <div class="page-head"><div><h1>יצירת אירוע חדש</h1><p class="sub">פרטי האירוע ורשימת המוזמנים</p></div></div>
+      <form id="cf" novalidate class="stack">
+        <div class="card"><div class="card-head"><h2>1. פרטי האירוע</h2></div><div class="card-pad" id="cf-fields">${eventFieldsHtml({ date: todayStr() })}</div></div>
+        <div class="card"><div class="card-head"><h2>2. רשימת מוזמנים</h2><span class="hint">השמות נשמרים רק לאירוע הזה</span></div>
+          <div class="card-pad">
+            <div class="tabs" id="cf-tabs">
+              <button type="button" data-t="file" class="on">העלאת קובץ<span class="cnt" id="cnt-file">0</span></button>
+              <button type="button" data-t="manual">הוספה ידנית<span class="cnt" id="cnt-manual">0</span></button>
+              <button type="button" data-t="copy">העתקה מאירוע קיים<span class="cnt" id="cnt-copy">0</span></button>
+            </div>
+            <div data-pane="file"><div id="cf-imp"></div></div>
+            <div data-pane="manual" hidden>
+              <div class="field"><label>הקלידו או הדביקו שמות — שם אחד בכל שורה</label><textarea class="input" id="cf-manual" rows="8" placeholder="דוד כהן&#10;שרה לוי&#10;משה, בן דוד"></textarea><span class="help">שם פרטי ואז שם משפחה. לשמות משפחה של כמה מילים הפרידו בפסיק: "משה, בן דוד". אפשר להוסיף עוד אורחים גם אחרי יצירת האירוע.</span></div>
+              <div id="cf-manual-sum" style="margin-top:8px"></div>
+            </div>
+            <div data-pane="copy" hidden></div>
+            <div class="summary-bar"><span>סה״כ ייכללו באירוע: <b id="cf-total">0</b> אורחים</span><span class="muted small">אפשר גם להתחיל בלי רשימה ולהוסיף אורחים בהמשך</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button type="submit" class="btn primary" id="cf-submit">${ICON.check}יצירת האירוע</button><a class="btn" href="#events">ביטול</a></div>
+      </form>`;
+    this.imp = createImporter($('#cf-imp'), { onChange: r => { this.importRes = r; this.sum(); } });
+    $('#cf-manual').addEventListener('input', () => { this.manualItems = pasteItems($('#cf-manual').value, null); $('#cf-manual-sum').innerHTML = pasteSummaryHtml(this.manualItems); this.sum(); });
+    $$('#cf-tabs button').forEach(b => b.onclick = () => {
+      this.tab = b.dataset.t;
+      $$('#cf-tabs button').forEach(x => x.classList.toggle('on', x === b));
+      $$('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== this.tab);
+      this.renderPane();
+    });
+    $('#cf').onsubmit = e => { e.preventDefault(); this.submit(); };
+    this.sum();
+  },
+  update() { if (this.tab === 'copy') this.renderPane(true); if ($('#cf-total')) this.sum(); },
+  renderPane(soft) {
+    if (this.tab !== 'copy') return;
+    const pane = $('[data-pane=copy]');
+    if (soft && pane.firstChild) return;
+    const evs = sortedEvents('desc').filter(e => !e.closed && (e.guests || []).length);
+    pane.innerHTML = evs.length ? `<div class="field"><label>העתקת רשימת המוזמנים מאירוע</label><select class="input" id="cp-sel"><option value="">— בחרו אירוע —</option>${evs.map(e => `<option value="${e.id}" ${e.id === this.copyFrom ? 'selected' : ''}>${esc(e.name)} · ${fmtDate(e.date)} (${fmtNum(e.guests.length)})</option>`).join('')}</select><span class="help">רק השמות מועתקים — הנוכחות מתחילה מאפס. אירועים שהסתיימו אינם זמינים כי השמות שלהם נמחקו.</span></div>` : '<div class="muted">אין אירועים פעילים עם רשימת מוזמנים להעתקה.</div>';
+    const sel = $('#cp-sel'); if (sel) sel.onchange = () => { this.copyFrom = sel.value; this.sum(); };
+  },
+  collect() {
+    const items = [];
+    const r = this.importRes;
+    if (r && r.valid) items.push(...r.valid);
+    items.push(...(this.manualItems || []).filter(i => i.status === 'new'));
+    const src = this.copyFrom && S.events.get(this.copyFrom);
+    if (src && !src.closed) items.push(...(src.guests || []));
+    return makeGuests(items, []);
+  },
+  sum() {
+    $('#cf-total').textContent = fmtNum(this.collect().length);
+    $('#cnt-file').textContent = fmtNum(this.importRes?.valid?.length || 0);
+    $('#cnt-manual').textContent = fmtNum((this.manualItems || []).filter(i => i.status === 'new').length);
+    $('#cnt-copy').textContent = fmtNum(this.copyFrom ? (S.events.get(this.copyFrom)?.guests || []).length : 0);
+  },
+  async submit() {
+    if (!S.canWrite) return toast('אין לכם הרשאת עריכה', 'error');
+    const v = readEventFields($('#cf-fields'), null);
+    if (!v) { $('#cf-fields').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+    const btn = $('#cf-submit'); btn.disabled = true;
+    try {
+      const guests = this.collect();
+      const id = await createEvent(v, guests);
+      toast(`האירוע נוצר עם ${fmtNum(guests.length)} מוזמנים`, 'success');
+      location.hash = 'event-' + id;
+    } catch (e) { console.error(e); toast(e.message && !e.code ? e.message : dbErrText(e), 'error'); }
+    finally { btn.disabled = false; }
+  }
+};
+
+/* ---- Event (check-in) view ---- */
+const EventView = {
+  mount(el, id) {
+    this.el = el; this.id = id; this.built = false; this.rowEls = new Map();
+    this.filter = 'all'; this.sort = S.settings.defaultSort || 'last'; this.q = ''; this.limit = 600;
+    el.innerHTML = '<div class="loading"><div class="spinner"></div>טוען אירוע…</div>';
+  },
+  update() {
+    const ev = S.events.get(this.id);
+    if (!ev) {
+      if (S.ready.events) { this.built = false; this.el.innerHTML = `<div class="card"><div class="empty"><div class="e-ico">${ICON.cal}</div><h3>האירוע לא נמצא</h3><p>ייתכן שהאירוע נמחק.</p><a class="btn" href="#events">חזרה לאירועים</a></div></div>`; }
+      return;
+    }
+    if (ev.closed) { this.built = false; this.renderClosed(ev); return; }
+    if (!this.built) this.build(ev);
+    this.refresh(ev);
+  },
+  renderClosed(ev) {
+    const s = evStats(ev);
+    this.el.innerHTML = `${bannerHtml()}<a class="back" href="#events">→ חזרה לאירועים</a>
+      <div class="ev-head"><div><h1>${esc(ev.name)}</h1><div class="ev-meta"><span>${fmtDate(ev.date)}${ev.time ? ' · ' + esc(ev.time) : ''}</span>${ev.location ? `<span>${esc(ev.location)}</span>` : ''}<span class="pill info">האירוע הסתיים</span></div></div>
+      ${S.canWrite ? `<div class="head-actions"><button class="btn" id="c-dup">${ICON.copy}שכפול לאירוע חדש</button><button class="btn" id="c-del">${ICON.trash}מחיקה</button></div>` : ''}</div>
+      <div class="stats">
+        <div class="stat"><div class="s-l">סה״כ מוזמנים</div><div class="s-v">${fmtNum(s.total)}</div></div>
+        <div class="stat present"><div class="s-l">נוכחים</div><div class="s-v">${fmtNum(s.present)}</div></div>
+        <div class="stat absent"><div class="s-l">נעדרים</div><div class="s-v">${fmtNum(s.absent)}</div></div>
+        <div class="stat"><div class="s-l">הסתיים</div><div class="s-v" style="font-size:18px">${ev.closedAt ? new Date(ev.closedAt).toLocaleDateString('he-IL') : '—'}</div></div>
+        <div class="stat rate"><div class="s-l">אחוז נוכחות סופי</div><div class="s-v">${fmtPct(s.rate)}</div><div class="prog"><i style="width:${Math.min(100, s.rate)}%"></i></div></div>
+      </div>
+      <div class="card"><div class="empty"><div class="e-ico">${ICON.check}</div><h3>שמות המוזמנים נמחקו</h3><p>האירוע הסתיים. נשמרו רק המספרים — מוזמנים, נוכחים ואחוז נוכחות — לצורך לוח הבקרה והדוחות.</p></div></div>`;
+    const d = $('#c-dup'); if (d) d.onclick = () => duplicateEventDialog(ev);
+    const x = $('#c-del'); if (x) x.onclick = () => deleteEventDialog(ev);
+  },
+  build(ev) {
+    this.built = true; this.rowEls.clear();
+    const ro = !S.canWrite;
+    this.el.innerHTML = `${bannerHtml()}
+      <a class="back" href="#events">→ חזרה לאירועים</a>
+      <div class="ev-head"><div><h1 id="e-name"></h1><div class="ev-meta" id="e-meta"></div></div>
+        <div class="head-actions">
+          ${ro ? '' : `<button class="btn" id="e-add">${ICON.plus}הוספה ידנית</button><button class="btn" id="e-imp">${ICON.up}ייבוא רשימה</button>`}
+          <button class="btn" id="e-exp">${ICON.dl}ייצוא</button>
+          ${ro ? '' : `<button class="btn primary" id="e-finish">${ICON.check}סיום אירוע</button>`}
+          ${ro ? '' : `<button class="btn" id="e-more" aria-label="פעולות נוספות">${ICON.more}</button>`}
+        </div></div>
+      ${ro ? '<div class="banner info">מצב צפייה בלבד — אין לכם הרשאה לעדכן נוכחות באירוע זה.</div>' : ''}
+      <div class="stats">
+        <div class="stat"><div class="s-l">סה״כ מוזמנים</div><div class="s-v" id="s-total">0</div></div>
+        <div class="stat present"><div class="s-l">נוכחים</div><div class="s-v" id="s-present">0</div></div>
+        <div class="stat absent"><div class="s-l">נעדרים</div><div class="s-v" id="s-absent">0</div></div>
+        <div class="stat"><div class="s-l">הגיעו בשעה האחרונה</div><div class="s-v" id="s-left">0</div></div>
+        <div class="stat rate"><div class="s-l">אחוז נוכחות</div><div class="s-v" id="s-rate">0%</div><div class="prog"><i id="s-bar" style="width:0"></i><span class="goal" id="s-goal" title="יעד"></span></div></div>
+      </div>
+      <div class="card checkin">
+        <div class="ci-tools">
+          <div class="toolbar">
+            <div class="search ci-search">${ICON.search}<input class="input" id="ci-q" placeholder="חיפוש לפי שם פרטי או שם משפחה…" autocomplete="off" enterkeyhint="done"></div>
+            <div class="seg" id="ci-f"><button data-f="all" class="on">הכל</button><button data-f="absent">טרם הגיעו</button><button data-f="present">נוכחים</button></div>
+            <select class="input" id="ci-sort" style="width:auto;min-width:170px" aria-label="מיון">
+              <option value="last">שם משפחה (א–ת)</option><option value="last-desc">שם משפחה (ת–א)</option>
+              <option value="first">שם פרטי (א–ת)</option><option value="first-desc">שם פרטי (ת–א)</option>
+              <option value="status">נעדרים תחילה</option><option value="recent">הגיעו לאחרונה</option>
+            </select>
+          </div>
+          <div class="g-head"><span></span><span>שם פרטי</span><span>שם משפחה</span><span>נוכחות</span><span class="h-time">שעת הגעה</span><span></span></div>
+        </div>
+        <div id="ci-body"></div>
+        <div class="list-foot"><span id="ci-count"></span><span class="hide-m">טיפ: הקלידו שם ולחצו <span class="kbd">Enter</span> כשנותרה תוצאה אחת — האורח יסומן כנוכח.</span></div>
+      </div>`;
+    $('#ci-sort').value = this.sort;
+    const q = $('#ci-q');
+    let t = null;
+    q.oninput = () => { clearTimeout(t); t = setTimeout(() => { this.q = q.value; this.limit = 600; this.renderRows(); }, 50); };
+    q.onkeydown = e => {
+      if (e.key === 'Escape') { q.value = ''; this.q = ''; this.renderRows(); }
+      if (e.key === 'Enter') {
+        e.preventDefault(); this.q = q.value; const list = this.computeList();
+        if (list.length === 1 && this.q.trim()) {
+          const g = list[0];
+          if (g.at) toast(`${guestName(g.g)} כבר סומן כנוכח`, '');
+          else { setPresence(this.id, g.id, true); toast(`✓ ${guestName(g.g)} סומן כנוכח`, 'success'); }
+          q.value = ''; this.q = ''; this.renderRows(); q.focus();
+        } else if (list.length > 1) toast(`נמצאו ${fmtNum(list.length)} תוצאות — המשיכו להקליד או סמנו ידנית`);
+        else toast('לא נמצא אורח בשם זה');
+      }
+    };
+    $$('#ci-f button').forEach(b => b.onclick = () => { this.filter = b.dataset.f; $$('#ci-f button').forEach(x => x.classList.toggle('on', x === b)); this.renderRows(); });
+    $('#ci-sort').onchange = e => { this.sort = e.target.value; this.renderRows(); };
+    const body = $('#ci-body');
+    body.addEventListener('change', e => {
+      if (!e.target.matches('input[type=checkbox]')) return;
+      const row = e.target.closest('.g-row');
+      setPresence(this.id, row.dataset.id, e.target.checked);
+    });
+    body.addEventListener('click', e => {
+      const rm = e.target.closest('.g-remove');
+      if (rm) { e.preventDefault(); e.stopPropagation(); this.removeGuest(rm.closest('.g-row').dataset.id); }
+      const more = e.target.closest('[data-more]');
+      if (more) { this.limit += 600; this.renderRows(); }
+    });
+    $('#e-exp').onclick = e => { e.stopPropagation(); const ev = S.events.get(this.id); showMenu($('#e-exp'), [
+      { label: 'ייצוא ל-Excel ‏(xlsx)', icon: ICON.dl, onClick: () => exportEvent(ev, 'xlsx') },
+      { label: 'ייצוא ל-CSV', icon: ICON.dl, onClick: () => exportEvent(ev, 'csv') }
+    ]); };
+    if (!ro) {
+      $('#e-add').onclick = () => this.addGuestDialog();
+      $('#e-imp').onclick = () => this.importDialog();
+      $('#e-finish').onclick = () => finishEventDialog(S.events.get(this.id));
+      $('#e-more').onclick = e => { e.stopPropagation(); const ev = S.events.get(this.id); showMenu($('#e-more'), [
+        { label: 'עריכת פרטי האירוע', icon: ICON.edit, onClick: () => editEventDialog(ev) },
+        { label: 'שכפול האירוע', icon: ICON.copy, onClick: () => duplicateEventDialog(ev) },
+        '-',
+        { label: 'איפוס כל הנוכחות', icon: ICON.reset, onClick: () => this.resetDialog() },
+        { label: 'סיום האירוע ומחיקת השמות', icon: ICON.check, onClick: () => finishEventDialog(ev) },
+        { label: 'מחיקת האירוע', icon: ICON.trash, danger: true, onClick: () => deleteEventDialog(ev) }
+      ]); };
+    }
+    if (matchMedia('(min-width: 900px)').matches) setTimeout(() => q.focus(), 50);
+  },
+  computeList() {
+    const ev = S.events.get(this.id); if (!ev) return [];
+    const p = presentMap(ev.id);
+    const qs = normName(this.q).toLowerCase();
+    let list = (ev.guests || []).map(g => ({ id: g.id, g, at: p[g.id] || null }));
+    if (this.filter === 'present') list = list.filter(x => x.at);
+    if (this.filter === 'absent') list = list.filter(x => !x.at);
+    if (qs) list = list.filter(x => { const f = normName(x.g?.first).toLowerCase(), l = normName(x.g?.last).toLowerCase(); return f.startsWith(qs) || l.startsWith(qs) || (f + ' ' + l).includes(qs) || (l + ' ' + f).includes(qs) || f.includes(qs) || l.includes(qs); });
+    const byLast = (a, b) => collator.compare(a.g?.last || '', b.g?.last || '') || collator.compare(a.g?.first || '', b.g?.first || '');
+    const byFirst = (a, b) => collator.compare(a.g?.first || '', b.g?.first || '') || collator.compare(a.g?.last || '', b.g?.last || '');
+    const sorters = { last: byLast, 'last-desc': (a, b) => byLast(b, a), first: byFirst, 'first-desc': (a, b) => byFirst(b, a), status: (a, b) => (!!a.at - !!b.at) || byLast(a, b), recent: (a, b) => (b.at || 0) - (a.at || 0) || byLast(a, b) };
+    list.sort(sorters[this.sort] || byLast);
+    return list;
+  },
+  makeRow(id) {
+    const el = document.createElement('label');
+    el.className = 'g-row' + (S.canWrite ? '' : ' ro'); el.dataset.id = id;
+    el.innerHTML = `<span class="g-check"><input type="checkbox" ${S.canWrite ? '' : 'disabled'}><span class="box">${ICON.check}</span></span><span class="g-first"></span><span class="g-last"></span><span class="g-status"></span><span class="g-time"></span><span>${S.canWrite ? `<button type="button" class="icon-btn g-remove" title="הסרה מהאירוע" aria-label="הסרה מהאירוע">${ICON.x}</button>` : ''}</span>`;
+    el._c = el.querySelector('input'); el._f = el.querySelector('.g-first'); el._l = el.querySelector('.g-last'); el._s = el.querySelector('.g-status'); el._t = el.querySelector('.g-time');
+    return el;
+  },
+  paintRow(el, x) {
+    const on = !!x.at;
+    if (el._on !== on) { el._on = on; el.classList.toggle('on', on); el._c.checked = on; el._s.innerHTML = on ? '<span class="pill ok">נוכח</span>' : '<span class="pill no">נעדר</span>'; el.setAttribute('aria-label', guestName(x.g) + (on ? ' — נוכח' : ' — נעדר')); }
+    if (el._c.checked !== on) el._c.checked = on;
+    const f = x.g.first || '—', l = x.g.last || '—';
+    if (el._f.textContent !== f) el._f.textContent = f;
+    if (el._l.textContent !== l) el._l.textContent = l;
+    const tt = on ? fmtTime(x.at) : '';
+    if (el._t.textContent !== tt) el._t.textContent = tt;
+  },
+  renderRows() {
+    const body = $('#ci-body'); if (!body) return;
+    const ev = S.events.get(this.id); if (!ev) return;
+    const list = this.computeList();
+    const total = (ev.guests || []).length;
+    if (!total) {
+      body.innerHTML = `<div class="empty"><div class="e-ico">${ICON.user}</div><h3>אין עדיין מוזמנים באירוע</h3><p>ייבאו רשימת מוזמנים מקובץ CSV או Excel, או הוסיפו אורחים ידנית.</p>${S.canWrite ? `<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn primary" type="button" id="em-imp">${ICON.up}ייבוא רשימה</button><button class="btn" type="button" id="em-add">${ICON.plus}הוספה ידנית</button></div>` : ''}</div>`;
+      const b = $('#em-imp'); if (b) b.onclick = () => this.importDialog();
+      const b2 = $('#em-add'); if (b2) b2.onclick = () => this.addGuestDialog();
+      $('#ci-count').textContent = ''; this.rowEls.clear(); return;
+    }
+    const shown = list.slice(0, this.limit);
+    const frag = document.createDocumentFragment();
+    for (const x of shown) {
+      let el = this.rowEls.get(x.id);
+      if (!el) { el = this.makeRow(x.id); this.rowEls.set(x.id, el); }
+      this.paintRow(el, x);
+      frag.appendChild(el);
+    }
+    if (!list.length) { const d = document.createElement('div'); d.className = 'list-empty'; d.textContent = this.q ? 'לא נמצאו אורחים התואמים לחיפוש.' : (this.filter === 'present' ? 'עדיין לא סומנו נוכחים.' : 'כל המוזמנים סומנו כנוכחים 🎉'); frag.appendChild(d); }
+    if (list.length > shown.length) { const d = document.createElement('div'); d.className = 'list-empty'; d.innerHTML = `<button type="button" class="btn" data-more>הצגת עוד ${fmtNum(Math.min(600, list.length - shown.length))} (מתוך ${fmtNum(list.length - shown.length)} נוספים)</button>`; frag.appendChild(d); }
+    body.replaceChildren(frag);
+    $('#ci-count').textContent = `מוצגים ${fmtNum(Math.min(list.length, shown.length))} מתוך ${fmtNum(total)} מוזמנים`;
+  },
+  refresh(ev) {
+    $('#e-name').textContent = ev.name;
+    const past = (ev.date || '') < todayStr();
+    $('#e-meta').innerHTML = `<span>${fmtDate(ev.date)}${ev.time ? ' · ' + esc(ev.time) : ''}</span>${ev.location ? `<span>${esc(ev.location)}</span>` : ''}${past ? '<span class="pill no">אירוע היסטורי</span>' : (ev.date === todayStr() ? '<span class="pill ok">היום</span>' : '')}${ev.notes ? `<span title="${esc(ev.notes)}">📝 ${esc(trunc(ev.notes, 60))}</span>` : ''}`;
+    const s = evStats(ev);
+    $('#s-total').textContent = fmtNum(s.total);
+    $('#s-present').textContent = fmtNum(s.present);
+    $('#s-absent').textContent = fmtNum(s.absent);
+    const pm = presentMap(ev.id), hourAgo = Date.now() - 3600000;
+    let recent = 0; for (const g of ev.guests || []) if (pm[g.id] && pm[g.id] > hourAgo) recent++;
+    $('#s-left').textContent = fmtNum(recent);
+    $('#s-rate').textContent = fmtPct(s.rate);
+    $('#s-bar').style.width = Math.min(100, s.rate) + '%';
+    const goal = $('#s-goal'); goal.style.insetInlineStart = S.settings.goal + '%'; goal.title = 'יעד ' + S.settings.goal + '%';
+    this.renderRows();
+  },
+  async removeGuest(gid) {
+    const g = (S.events.get(this.id)?.guests || []).find(x => x.id === gid);
+    const ok = await confirmDialog({ title: 'הסרת אורח מהאירוע', message: `להסיר את <b>${esc(guestName(g))}</b> מרשימת המוזמנים של אירוע זה?`, confirmLabel: 'הסרה', danger: true });
+    if (!ok) return;
+    try {
+      await updateEventGuests(this.id, list => list.filter(x => x.id !== gid));
+      if (presentMap(this.id)[gid]) setPresence(this.id, gid, false);
+      toast('האורח הוסר מהאירוע', 'success');
+    } catch (e) { toast(dbErrText(e), 'error'); }
+  },
+  addGuestDialog() { addGuestsDialog(this.id); },
+  importDialog() {
+    const eid = this.id;
+    const wrap = document.createElement('div');
+    let res = null;
+    openModal({ title: 'ייבוא רשימת מוזמנים לאירוע', wide: true, body: wrap, actions: [
+      { label: 'ייבוא', cls: 'primary', id: 'imp-go', onClick: async ({ el }) => {
+        if (!res || !res.loaded) { toast('בחרו קובץ לייבוא', 'error'); return false; }
+        if (!res.valid.length) { toast('אין שורות תקינות לייבוא', 'error'); return false; }
+        try {
+          let added = 0;
+          await updateEventGuests(eid, cur => { const add = makeGuests(res.valid, eventKeys({ guests: cur })); added = add.length; return cur.concat(add); });
+          toast(`יובאו ${fmtNum(added)} אורחים`, 'success');
+        } catch (e) { toast(e.code ? dbErrText(e) : e.message, 'error'); return false; }
+      } },
+      { label: 'ביטול' }
+    ] });
+    createImporter(wrap, { getExistingIds: () => eventKeys(S.events.get(eid)), onChange: r => { res = r; const b = $('#imp-go'); if (b) b.textContent = r.valid.length ? `ייבוא ${fmtNum(r.valid.length)} אורחים` : 'ייבוא'; } });
+  },
+  async resetDialog() {
+    const ok = await confirmDialog({ title: 'איפוס נוכחות', message: 'לסמן את כל המוזמנים באירוע זה כנעדרים? לא ניתן לבטל פעולה זו.', confirmLabel: 'איפוס', danger: true, typeToConfirm: 'איפוס' });
+    if (!ok) return;
+    const p = presentMap(this.id);
+    Object.keys(p).filter(k => p[k]).forEach(gid => setPresence(this.id, gid, false));
+    toast('הנוכחות אופסה', 'success');
+  },
+  destroy() {}
+};
+
+/* ---- Reports ---- */
+const ReportsView = {
+  mount(el) {
+    this.from = ''; this.to = ''; this.charts = [];
+    el.innerHTML = `${bannerHtml()}
+      <div class="page-head"><div><h1>דוחות וניתוחים</h1><p class="sub">השוואת אירועים, ממוצעים ומגמות חודשיות</p></div>
+      <div class="head-actions"><button class="btn" id="r-xlsx">${ICON.dl}ייצוא ל-Excel</button><button class="btn primary" id="r-pdf">${ICON.dl}ייצוא ל-PDF</button></div></div>
+      <div class="card" style="margin-bottom:18px"><div class="toolbar" style="border:0">
+        <div class="field"><label>מתאריך</label><input type="date" class="input" id="r-from"></div>
+        <div class="field"><label>עד תאריך</label><input type="date" class="input" id="r-to"></div>
+        <div class="field"><label>טווח מהיר</label><div class="seg" id="r-q"><button data-q="all" class="on">הכל</button><button data-q="year">השנה</button><button data-q="12">12 חודשים</button><button data-q="3">3 חודשים</button></div></div>
+      </div></div>
+      <div id="r-body"></div>`;
+    const setQ = q => {
+      const d = new Date(); const t = todayStr();
+      if (q === 'all') { this.from = ''; this.to = ''; }
+      else if (q === 'year') { this.from = d.getFullYear() + '-01-01'; this.to = d.getFullYear() + '-12-31'; }
+      else { const f = new Date(d.getFullYear(), d.getMonth() - Number(q), d.getDate()); this.from = f.getFullYear() + '-' + pad2(f.getMonth() + 1) + '-' + pad2(f.getDate()); this.to = t; }
+      $('#r-from').value = this.from; $('#r-to').value = this.to;
+      $$('#r-q button').forEach(b => b.classList.toggle('on', b.dataset.q === q));
+      this.built = false; this.update();
+    };
+    $$('#r-q button').forEach(b => b.onclick = () => setQ(b.dataset.q));
+    $('#r-from').onchange = e => { this.from = e.target.value; $$('#r-q button').forEach(b => b.classList.remove('on')); this.built = false; this.update(); };
+    $('#r-to').onchange = e => { this.to = e.target.value; $$('#r-q button').forEach(b => b.classList.remove('on')); this.built = false; this.update(); };
+    $('#r-xlsx').onclick = () => this.exportXlsx();
+    $('#r-pdf').onclick = () => this.exportPdf();
+  },
+  data() {
+    let evs = sortedEvents('asc');
+    if (this.from) evs = evs.filter(e => (e.date || '') >= this.from);
+    if (this.to) evs = evs.filter(e => (e.date || '') <= this.to);
+    const rows = evs.map(ev => Object.assign({ ev }, evStats(ev)));
+    const withG = rows.filter(r => r.total);
+    const t = totals(evs);
+    let hi = null, lo = null;
+    for (const r of withG) { if (!hi || r.rate > hi.rate) hi = r; if (!lo || r.rate < lo.rate) lo = r; }
+    const months = new Map();
+    for (const r of rows) {
+      const k = (r.ev.date || '').slice(0, 7); if (!k) continue;
+      let m = months.get(k); if (!m) { m = { ym: k, events: 0, invited: 0, present: 0, rateSum: 0, n: 0 }; months.set(k, m); }
+      m.events++; m.invited += r.total; m.present += r.present; if (r.total) { m.rateSum += r.rate; m.n++; }
+    }
+    const monthly = [...months.values()].sort((a, b) => a.ym.localeCompare(b.ym)).map(m => Object.assign(m, { rate: m.invited ? m.present / m.invited * 100 : 0, avg: m.n ? m.rateSum / m.n : 0 }));
+    return { rows, t, hi, lo, monthly };
+  },
+  update() {
+    const body = $('#r-body'); if (!body) return;
+    if (!allReady()) { body.innerHTML = '<div class="loading"><div class="spinner"></div>טוען…</div>'; return; }
+    const d = this.data(); this.last = d;
+    if (!d.rows.length) { this.destroy(); this.built = false; body.innerHTML = `<div class="card"><div class="empty"><div class="e-ico">${ICON.chart}</div><h3>אין נתונים בטווח הנבחר</h3><p>${S.events.size ? 'נסו טווח תאריכים אחר.' : 'צרו אירוע וסמנו נוכחות כדי לראות דוחות.'}</p></div></div>`; return; }
+    if (!this.built) {
+      this.destroy(); this.built = true;
+      body.innerHTML = `<section class="kpis" id="r-kpis"></section>
+        <div class="stack">
+          <div class="card"><div class="card-head"><h2>השוואת נוכחות בין אירועים</h2><span class="hint">קו מקווקו = יעד ${fmtPct(S.settings.goal)}</span></div><div class="chart-box" style="height:320px"><canvas id="r-c1"></canvas></div></div>
+          <div class="card"><div class="card-head"><h2>מגמת נוכחות חודשית</h2><span class="hint">עמודות: נוכחים · קו: אחוז נוכחות</span></div><div class="chart-box" style="height:300px"><canvas id="r-c2"></canvas></div></div>
+          <div class="grid-2e">
+            <div class="card"><div class="card-head"><h2>פירוט לפי אירוע</h2></div><div class="tbl-wrap" id="r-t1"></div></div>
+            <div class="card"><div class="card-head"><h2>פירוט חודשי</h2></div><div class="tbl-wrap" id="r-t2"></div></div>
+          </div></div>`;
+    }
+    const { t, hi, lo, rows, monthly } = d;
+    $('#r-kpis').innerHTML = `
+      <div class="kpi"><div class="k-label">אירועים בטווח</div><div class="k-val">${fmtNum(t.events)}</div><div class="k-sub">${fmtNum(t.invited)} הזמנות · ${fmtNum(t.present)} נוכחים</div></div>
+      <div class="kpi accent"><div class="k-label">ממוצע נוכחות לאירוע</div><div class="k-val">${fmtPct(t.avg)}</div><div class="k-sub">יעד: ${fmtPct(S.settings.goal)}</div></div>
+      <div class="kpi"><div class="k-label">אחוז נוכחות כולל</div><div class="k-val">${fmtPct(t.overall)}</div><div class="k-sub">נוכחים / כלל המוזמנים</div></div>
+      <div class="kpi"><div class="k-label">נוכחות גבוהה ביותר</div><div class="k-val">${hi ? fmtPct(hi.rate) : '—'}</div><div class="k-sub" title="${esc(hi?.ev.name || '')}">${hi ? esc(hi.ev.name) : '—'}</div></div>
+      <div class="kpi"><div class="k-label">נוכחות נמוכה ביותר</div><div class="k-val">${lo ? fmtPct(lo.rate) : '—'}</div><div class="k-sub" title="${esc(lo?.ev.name || '')}">${lo ? esc(lo.ev.name) : '—'}</div></div>`;
+    $('#r-t1').innerHTML = `<table class="tbl cards"><thead><tr><th>אירוע</th><th>תאריך</th><th class="n">מוזמנים</th><th class="n">נוכחים</th><th>נוכחות</th></tr></thead><tbody>
+      ${rows.slice().reverse().map(r => `<tr class="click" data-go="${r.ev.id}"><td class="lead"><span class="t-name">${esc(r.ev.name)}</span>${r === hi && rows.length > 1 ? ' <span class="pill ok">הגבוה</span>' : ''}${r === lo && rows.length > 1 ? ' <span class="pill warn">הנמוך</span>' : ''}</td><td data-label="תאריך" class="muted">${fmtDate(r.ev.date)}</td><td class="n" data-label="מוזמנים">${fmtNum(r.total)}</td><td class="n" data-label="נוכחים">${fmtNum(r.present)}</td><td data-label="נוכחות">${rateCell(r.rate)}</td></tr>`).join('')}</tbody></table>`;
+    $$('#r-t1 [data-go]').forEach(tr => tr.onclick = () => location.hash = 'event-' + tr.dataset.go);
+    $('#r-t2').innerHTML = `<table class="tbl cards"><thead><tr><th>חודש</th><th class="n">אירועים</th><th class="n">מוזמנים</th><th class="n">נוכחים</th><th>נוכחות</th></tr></thead><tbody>
+      ${monthly.slice().reverse().map(m => `<tr><td class="lead"><span class="t-name">${fmtMonth(m.ym)}</span></td><td class="n" data-label="אירועים">${fmtNum(m.events)}</td><td class="n" data-label="מוזמנים">${fmtNum(m.invited)}</td><td class="n" data-label="נוכחים">${fmtNum(m.present)}</td><td data-label="נוכחות">${rateCell(m.rate)}</td></tr>`).join('')}</tbody></table>`;
+    if (!chartsReady()) return;
+    const l1 = rows.map(r => trunc(r.ev.name, 18)), d1 = rows.map(r => Math.round(r.rate * 10) / 10), c1 = d1.map(v => v >= S.settings.goal ? NAVY : NAVY_LIGHT);
+    const l2 = monthly.map(m => fmtMonth(m.ym)), d2a = monthly.map(m => m.present), d2b = monthly.map(m => Math.round(m.rate * 10) / 10);
+    if (this.charts.length) {
+      const [a, b] = this.charts;
+      a.data.labels = l1; a.data.datasets[0].data = d1; a.data.datasets[0].backgroundColor = c1; a.update('none');
+      b.data.labels = l2; b.data.datasets[0].data = d2a; b.data.datasets[1].data = d2b; b.update('none');
+      return;
+    }
+    const titles = rows.map(r => r.ev.name + ' · ' + fmtDate(r.ev.date));
+    this.charts.push(new Chart($('#r-c1'), { type: 'bar', data: { labels: l1, datasets: [{ data: d1, backgroundColor: c1, borderRadius: 4, maxBarThickness: 42 }] },
+      options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false }, tooltip: { rtl: true, textDirection: 'rtl', callbacks: { title: i => titles[i[0].dataIndex], label: c => ' ' + c.parsed.y + '% נוכחות' } } },
+        scales: { x: { reverse: true, grid: { display: false }, ticks: { maxRotation: 50, autoSkip: true } }, y: { min: 0, max: 100, position: 'right', ticks: { callback: v => v + '%' } } } },
+      plugins: [goalLinePlugin(() => S.settings.goal, 'y')] }));
+    this.charts.push(new Chart($('#r-c2'), { data: { labels: l2, datasets: [
+        { type: 'bar', label: 'נוכחים', data: d2a, backgroundColor: '#C9D3E6', borderRadius: 4, maxBarThickness: 46, yAxisID: 'y', order: 2 },
+        { type: 'line', label: 'אחוז נוכחות', data: d2b, borderColor: NAVY, backgroundColor: NAVY, borderWidth: 2.5, pointRadius: 4, tension: .25, yAxisID: 'y1', order: 1 } ] },
+      options: { responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: true, position: 'bottom', rtl: true, labels: { boxWidth: 12, usePointStyle: true } }, tooltip: { rtl: true, textDirection: 'rtl', callbacks: { label: c => ' ' + c.dataset.label + ': ' + (c.datasetIndex ? c.parsed.y + '%' : fmtNum(c.parsed.y)) } } },
+        scales: { x: { reverse: true, grid: { display: false } }, y: { position: 'right', beginAtZero: true, title: { display: true, text: 'נוכחים' } }, y1: { position: 'left', min: 0, max: 100, grid: { display: false }, ticks: { callback: v => v + '%' }, title: { display: true, text: 'אחוז נוכחות' } } } } }));
+  },
+  rangeLabel() { return this.from || this.to ? `${this.from ? fmtDate(this.from) : 'מההתחלה'} – ${this.to ? fmtDate(this.to) : 'היום'}` : 'כל התקופות'; },
+  async exportXlsx() {
+    if (!window.XLSX) return toast('רכיב Excel לא נטען', 'error');
+    const d = this.last || this.data(); if (!d.rows.length) return toast('אין נתונים לייצוא', 'error');
+    const r1 = n => Math.round(n * 10) / 10;
+    const data = xlsxBook([
+      { name: 'סיכום', cols: [{ wch: 28 }, { wch: 36 }], rows: [['מדד', 'ערך'], ['ארגון', S.settings.orgName || ''], ['טווח', this.rangeLabel()], ['הופק בתאריך', fmtDate(todayStr())], ['מספר אירועים', d.t.events], ['סה״כ מוזמנים', d.t.invited], ['סה״כ נוכחים', d.t.present], ['סה״כ נעדרים', d.t.absent], ['אחוז נוכחות כולל', r1(d.t.overall) + '%'], ['ממוצע נוכחות לאירוע', r1(d.t.avg) + '%'], ['האירוע עם הנוכחות הגבוהה ביותר', d.hi ? `${d.hi.ev.name} (${r1(d.hi.rate)}%)` : ''], ['האירוע עם הנוכחות הנמוכה ביותר', d.lo ? `${d.lo.ev.name} (${r1(d.lo.rate)}%)` : '']] },
+      { name: 'השוואת אירועים', cols: [{ wch: 30 }, { wch: 13 }, { wch: 18 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }], rows: [['שם האירוע', 'תאריך', 'מיקום', 'מוזמנים', 'נוכחים', 'נעדרים', 'אחוז נוכחות']].concat(d.rows.map(r => [r.ev.name, r.ev.date, r.ev.location || '', r.total, r.present, r.absent, r1(r.rate) + '%'])) },
+      { name: 'מגמה חודשית', cols: [{ wch: 16 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 14 }, { wch: 18 }], rows: [['חודש', 'אירועים', 'מוזמנים', 'נוכחים', 'אחוז נוכחות', 'ממוצע לאירוע']].concat(d.monthly.map(m => [fmtMonth(m.ym), m.events, m.invited, m.present, r1(m.rate) + '%', r1(m.avg) + '%'])) }
+    ]);
+    if (await saveFile('דוח נוכחות ' + todayStr() + '.xlsx', data)) toast('הדוח יוצא', 'success');
+  },
+  async exportPdf() {
+    const d = this.last || this.data(); if (!d.rows.length) return toast('אין נתונים לייצוא', 'error');
+    if (!window.jspdf) return toast('רכיב PDF לא נטען', 'error');
+    const btn = $('#r-pdf'); btn.disabled = true;
+    try {
+      await document.fonts.ready;
+      const data = buildPdf(d, this.charts, this.rangeLabel());
+      if (await saveFile('דוח נוכחות ' + todayStr() + '.pdf', data)) toast('הדוח יוצא', 'success');
+    } catch (e) { console.error(e); toast('יצירת ה-PDF נכשלה', 'error'); }
+    finally { btn.disabled = false; }
+  },
+  destroy() { (this.charts || []).forEach(c => c.destroy()); this.charts = []; }
+};
+function buildPdf(d, charts, rangeLabel) {
+  const W = 1240, H = 1754, M = 80, R = W - M;
+  const pages = []; let c, ctx, y;
+  const font = (size, w = 400) => `${w} ${size}px Heebo, Arial, sans-serif`;
+  const newPage = () => { c = document.createElement('canvas'); c.width = W; c.height = H; ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H); ctx.direction = 'rtl'; ctx.textBaseline = 'alphabetic'; pages.push(c); y = M; };
+  const text = (s, x, yy, { size = 20, w = 400, color = '#101828', align = 'right' } = {}) => { ctx.font = font(size, w); ctx.fillStyle = color; ctx.textAlign = align; ctx.fillText(String(s), x, yy); };
+  const fit = (s, max, size, w = 400) => { ctx.font = font(size, w); s = String(s); if (ctx.measureText(s).width <= max) return s; while (s.length > 1 && ctx.measureText(s + '…').width > max) s = s.slice(0, -1); return s + '…'; };
+  const r1 = n => fmtPct(n);
+  newPage();
+  ctx.fillStyle = '#1A2B4C'; ctx.fillRect(0, 0, W, 190);
+  text('דוח נוכחות באירועים', R, 92, { size: 44, w: 700, color: '#fff' });
+  text([S.settings.orgName, rangeLabel].filter(Boolean).join(' · '), R, 140, { size: 22, color: '#B9C7E2' });
+  text('הופק: ' + new Date().toLocaleDateString('he-IL') + ' · ניהול נוכחות באירועים', M, 140, { size: 18, color: '#9FB1D6', align: 'left' });
+  y = 240;
+  const kp = [['אירועים', fmtNum(d.t.events)], ['מוזמנים', fmtNum(d.t.invited)], ['נוכחים', fmtNum(d.t.present)], ['נוכחות כוללת', r1(d.t.overall)], ['ממוצע לאירוע', r1(d.t.avg)]];
+  const bw = (W - 2 * M - 4 * 16) / 5;
+  kp.forEach((k, i) => { const x = R - i * (bw + 16); ctx.fillStyle = i === 4 ? '#1A2B4C' : '#F4F6F9'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x - bw, y, bw, 120, 12) : ctx.rect(x - bw, y, bw, 120); ctx.fill(); text(k[0], x - 20, y + 42, { size: 19, color: i === 4 ? '#B9C7E2' : '#667085' }); text(k[1], x - 20, y + 95, { size: 38, w: 700, color: i === 4 ? '#fff' : '#1A2B4C' }); });
+  y += 160;
+  if (d.hi) { text('הנוכחות הגבוהה ביותר: ' + fit(d.hi.ev.name, 520, 21, 600) + ' — ' + r1(d.hi.rate), R, y, { size: 21, w: 600, color: '#0E7A55' }); y += 36; }
+  if (d.lo) { text('הנוכחות הנמוכה ביותר: ' + fit(d.lo.ev.name, 520, 21, 600) + ' — ' + r1(d.lo.rate), R, y, { size: 21, w: 600, color: '#B54708' }); y += 36; }
+  y += 20;
+  const drawChart = (ch, title) => {
+    if (!ch) return;
+    const cw = W - 2 * M, chh = Math.round(cw * ch.canvas.height / ch.canvas.width);
+    if (y + chh + 70 > H - M) { newPage(); }
+    text(title, R, y + 24, { size: 24, w: 700 }); y += 44;
+    ctx.drawImage(ch.canvas, M, y, cw, chh); y += chh + 40;
+  };
+  drawChart(charts[0], 'השוואת נוכחות בין אירועים');
+  drawChart(charts[1], 'מגמת נוכחות חודשית');
+  const table = (title, head, widths, rows) => {
+    const rowH = 46;
+    const header = () => { ctx.fillStyle = '#F4F6F9'; ctx.fillRect(M, y, W - 2 * M, rowH); let x = R; head.forEach((h, i) => { text(h, x - 14, y + 30, { size: 18, w: 600, color: '#667085' }); x -= widths[i]; }); y += rowH; };
+    if (y + 140 > H - M) newPage();
+    text(title, R, y + 24, { size: 24, w: 700 }); y += 44; header();
+    rows.forEach(r => {
+      if (y + rowH > H - M) { newPage(); header(); }
+      let x = R; r.forEach((v, i) => { text(fit(v, widths[i] - 24, 18, i ? 400 : 600), x - 14, y + 30, { size: 18, w: i ? 400 : 600, color: '#101828' }); x -= widths[i]; });
+      ctx.fillStyle = '#E4E7EC'; ctx.fillRect(M, y + rowH - 1, W - 2 * M, 1); y += rowH;
+    });
+    y += 30;
+  };
+  const tw = W - 2 * M;
+  table('פירוט לפי אירוע', ['שם האירוע', 'תאריך', 'מוזמנים', 'נוכחים', 'נעדרים', 'אחוז נוכחות'], [tw * .36, tw * .16, tw * .12, tw * .12, tw * .12, tw * .12], d.rows.slice().reverse().map(r => [r.ev.name, fmtDate(r.ev.date), fmtNum(r.total), fmtNum(r.present), fmtNum(r.absent), r1(r.rate)]));
+  table('פירוט חודשי', ['חודש', 'אירועים', 'מוזמנים', 'נוכחים', 'אחוז נוכחות', 'ממוצע לאירוע'], [tw * .24, tw * .14, tw * .15, tw * .15, tw * .16, tw * .16], d.monthly.slice().reverse().map(m => [fmtMonth(m.ym), fmtNum(m.events), fmtNum(m.invited), fmtNum(m.present), r1(m.rate), r1(m.avg)]));
+  pages.forEach((p, i) => { const cx = p.getContext('2d'); cx.direction = 'rtl'; cx.font = font(16); cx.fillStyle = '#98A2B3'; cx.textAlign = 'center'; cx.fillText(`עמוד ${i + 1} מתוך ${pages.length}`, W / 2, H - 36); });
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
+  pages.forEach((p, i) => { if (i) pdf.addPage(); pdf.addImage(p.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, 595.28, 841.89); });
+  return pdf.output('arraybuffer');
+}
+
+/* ---- Settings ---- */
+const SettingsView = {
+  mount(el) {
+    const st = S.settings;
+    const role = S.isOwner ? 'בעלים' : (S.canWrite ? 'עורך / משתתף' : 'צפייה בלבד');
+    el.innerHTML = `${bannerHtml()}
+      <div class="page-head"><div><h1>הגדרות</h1><p class="sub">חשבון, העדפות וניהול נתונים</p></div></div>
+      <div class="stack" style="max-width:860px">
+        <div class="card"><div class="card-head"><h2>חשבון ואבטחה</h2></div><div class="card-pad">
+          <div class="mini-kv" style="grid-template-columns:repeat(3,1fr)"><div><span>משתמש מחובר</span><b style="font-size:16px">${esc(S.me?.name || 'משתמש claude.ai')}</b></div><div><span>הרשאה</span><b style="font-size:16px">${role}</b></div><div><span>אחסון</span><b style="font-size:16px">מסד נתונים מאובטח</b></div></div>
+          <p class="small muted" style="margin:0">המערכת נפתחת ישירות, ללא מסך כניסה. שמות המוזמנים נשמרים רק בתוך כל אירוע ונמחקים בלחיצה על "סיום אירוע". הנתונים נשמרים ב-Firebase Realtime Database, תחת ענף נפרד משאר המערכות בפרויקט.</p>
+        </div></div>
+        <div class="card"><div class="card-head"><h2>העדפות</h2></div><div class="card-pad">
+          <div class="form-grid">
+            <div class="field"><label>שם הארגון (יופיע בדוחות)</label><input class="input" id="st-org" maxlength="80" value="${esc(st.orgName || '')}"></div>
+            <div class="field"><label>יעד אחוז נוכחות</label><input class="input" id="st-goal" type="number" min="0" max="100" step="1" value="${esc(st.goal)}"><span class="help">אירועים מתחת ליעד מסומנים בגוון בהיר בגרפים.</span></div>
+            <div class="field"><label>מיון ברירת מחדל ברשימת הנוכחות</label><select class="input" id="st-sort"><option value="last">שם משפחה (א–ת)</option><option value="first">שם פרטי (א–ת)</option><option value="status">נעדרים תחילה</option></select></div>
+            <div class="field full"><div class="err-msg" id="st-err"></div></div>
+          </div>
+          <button class="btn primary" id="st-save" ${S.canWrite ? '' : 'disabled'}>שמירת העדפות</button>
+        </div></div>
+        <div class="card"><div class="card-head"><h2>גיבוי וייצוא</h2></div><div class="card-pad" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="st-backup">${ICON.dl}גיבוי מלא (JSON)</button>
+        </div></div>
+        ${S.isOwner ? `<div class="card" style="border-color:#F6C9C5"><div class="card-head"><h2 style="color:var(--red)">אזור מסוכן</h2></div><div class="card-pad"><p class="small muted" style="margin-top:0">מחיקת כל האירועים ורשומות הנוכחות לצמיתות. מומלץ לבצע גיבוי לפני כן.</p><button class="btn danger" id="st-wipe">${ICON.trash}מחיקת כל הנתונים</button></div></div>` : ''}
+        <div class="card"><div class="card-head"><h2>קיצורי עבודה בכניסה לאירוע</h2></div><div class="card-pad small">
+          <p style="margin:0 0 6px">• הקלידו שם בשורת החיפוש ולחצו <span class="kbd">Enter</span> כשנותרה תוצאה אחת — האורח יסומן כנוכח והחיפוש יתנקה.</p>
+          <p style="margin:0 0 6px">• לחיצה על כל השורה מסמנת/מבטלת נוכחות. <span class="kbd">Esc</span> מנקה את החיפוש.</p>
+          <p style="margin:0 0 6px">• בסוף האירוע לחצו <b>סיום אירוע</b> — שמות המוזמנים נמחקים ונשמרים רק המספרים לדוחות.</p>
+          <p style="margin:0">• כמה סדרנים יכולים לסמן במקביל ממכשירים שונים — העדכונים מסתנכרנים בזמן אמת.</p>
+        </div></div>
+      </div>`;
+    $('#st-sort').value = st.defaultSort || 'last';
+    $('#st-save').onclick = async () => {
+      const goal = Number($('#st-goal').value), err = $('#st-err');
+      if (!Number.isFinite(goal) || goal < 0 || goal > 100) { err.textContent = 'היעד חייב להיות מספר בין 0 ל-100.'; return; }
+      err.textContent = '';
+      const v = { orgName: normName($('#st-org').value), goal: Math.round(goal), defaultSort: $('#st-sort').value, updatedAt: Date.now() };
+      try { await serial('settings/app', () => withRetry(() => S.db.doc('settings/app').set(v))); Object.assign(S.settings, v); changed(); toast('ההעדפות נשמרו', 'success'); }
+      catch (e) { err.textContent = dbErrText(e); }
+    };
+    $('#st-backup').onclick = () => saveFile('גיבוי נוכחות ' + todayStr() + '.json', JSON.stringify({ exportedAt: new Date().toISOString(), settings: S.settings, events: [...S.events.values()], attendance: Object.fromEntries([...S.events.keys()].map(id => [id, presentMap(id)])) }, null, 2));
+    const wipe = $('#st-wipe');
+    if (wipe) wipe.onclick = async () => {
+      const ok = await confirmDialog({ title: 'מחיקת כל הנתונים', message: `פעולה זו תמחק את כל ${fmtNum(S.events.size)} האירועים והנתונים שלהם לצמיתות.`, confirmLabel: 'מחיקה לצמיתות', danger: true, typeToConfirm: 'מחק הכל' });
+      if (!ok) return;
+      const prog = progressModal('מוחק נתונים');
+      try {
+        const jobs = [...S.events.keys()].flatMap(id => [refEvent(id), refAtt(id)]);
+        await pool(jobs, 6, r => r.delete(), (d, t) => prog.set(`מוחק… ${fmtNum(d)} / ${fmtNum(t)}`, d / t));
+        S.events.clear(); S.att.clear(); changed();
+        prog.close(); toast('כל הנתונים נמחקו', 'success'); location.hash = 'dashboard';
+      } catch (e) { prog.close(); toast(dbErrText(e), 'error'); }
+    };
+  },
+  update() {}
+};
+
+/* ============ Router ============ */
+const VIEWS = { dashboard: Dashboard, events: EventsView, create: CreateView, reports: ReportsView, prefs: SettingsView, event: EventView };
+function route() {
+  closeMenu();
+  if (!S.db) return;
+  let h = (location.hash || '').slice(1) || 'dashboard', name = h, param = null;
+  if (h.startsWith('event-')) { name = 'event'; param = h.slice(6); }
+  if (!VIEWS[name]) name = 'dashboard';
+  try { current && current.destroy && current.destroy(); } catch (e) {}
+  current = VIEWS[name];
+  current.mount(main, param);
+  try { current.update && current.update(); } catch (e) { console.error(e); }
+  $$('#nav a').forEach(a => a.classList.toggle('active', a.dataset.r === (name === 'event' ? 'events' : name)));
+  $('#side').classList.remove('open'); $('#scrim').classList.remove('show');
+  window.scrollTo(0, 0);
+}
+window.addEventListener('hashchange', route);
+$('#menu-btn').onclick = () => { $('#side').classList.add('open'); $('#scrim').classList.add('show'); };
+$('#scrim').onclick = () => { $('#side').classList.remove('open'); $('#scrim').classList.remove('show'); };
+function updateSideFoot() {
+  const f = $('#side-foot'); if (!f) return;
+  const name = S.me?.name || 'משתמש מחובר';
+  f.innerHTML = `<div><span class="dot ${allReady() ? '' : 'off'}"></span><span class="who">${esc(name)}</span></div><div style="margin-top:3px">${allReady() ? `${fmtNum(S.events.size)} אירועים · ${fmtNum([...S.events.values()].filter(e => !e.closed).length)} פעילים` : 'מסנכרן נתונים…'}</div>`;
+}
+
+/* ============ Boot ============ */
+/* ============ Firebase data layer (same interface the app uses) ============ */
+function makeRtdb(fdb) {
+  const mapErr = e => { const m = String((e && (e.code || e.message)) || '').toLowerCase(); return { code: m.includes('permission') ? 'invalid_argument' : 'unavailable', message: e && e.message }; };
+  const wrap = p => p.catch(e => { throw mapErr(e); });
+  const clean = o => JSON.parse(JSON.stringify(o));
+  const flatten = (obj, pre = '', out = {}) => { for (const k in obj) { const v = obj[k]; if (v && typeof v === 'object' && !Array.isArray(v) && Object.keys(v).length) flatten(v, pre + k + '/', out); else out[pre + k] = v === undefined ? null : v; } return out; };
+  const snapDoc = s => ({ id: s.key, exists: s.exists(), data: () => (s.exists() ? s.val() : undefined), metadata: {} });
+  const docRef = path => {
+    const ref = fdb.ref(ROOT + '/' + path);
+    return {
+      id: path.split('/').pop(), path,
+      get: () => wrap(ref.get()).then(snapDoc),
+      set: d => wrap(ref.set(clean(d))),
+      update: d => wrap(ref.update(flatten(clean(d)))),
+      delete: () => wrap(ref.remove()),
+      onSnapshot(next, err) { const cb = s => next(snapDoc(s)); ref.on('value', cb, e => err && err(mapErr(e))); return () => ref.off('value', cb); }
+    };
+  };
+  return {
+    doc: docRef,
+    collection: c => ({
+      path: c, doc: id => docRef(c + '/' + id),
+      onSnapshot(next, err) {
+        const ref = fdb.ref(ROOT + '/' + c);
+        const cb = s => { const v = s.val() || {}; const docs = Object.keys(v).map(id => ({ id, exists: true, data: () => v[id], metadata: {} })); next({ docs, size: docs.length, empty: !docs.length, metadata: {} }); };
+        ref.on('value', cb, e => err && err(mapErr(e)));
+        return () => ref.off('value', cb);
+      }
+    })
+  };
+}
+const browserDownloads = {
+  async save({ filename, data }) {
+    const ext = (filename.split('.').pop() || '').toLowerCase();
+    const types = { csv: 'text/csv;charset=utf-8', json: 'application/json', pdf: 'application/pdf', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' };
+    const blob = data instanceof Blob ? data : new Blob([data], { type: types[ext] || 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    return { status: 'saved' };
+  }
+};
+
+function showConfigGate(msg) {
+  document.body.classList.add('locked');
+  main.innerHTML = `<div class="gate card card-pad"><div class="empty" style="padding:20px"><h3>חסרות הגדרות Firebase</h3><p>${msg || 'פתחו את הקובץ index.html והדביקו את פרטי הפרויקט שלכם בבלוק firebaseConfig שבתחילת הסקריפט.'}</p></div></div>`;
+}
+function onDbError(e) {
+  console.error(e);
+  if (e && e.code === 'invalid_argument') setBanner('error', 'אין הרשאה לנתוני המערכת. בדקו את כללי האבטחה של attendanceApp ב-Realtime Database ← Rules.');
+  else setBanner('error', 'החיבור למסד הנתונים נקטע. רעננו את העמוד.');
+}
+let started = false;
+function startData(u) {
+  if (started) return; started = true;
+  document.body.classList.remove('locked');
+  S.db = makeRtdb(firebase.database()); S.dl = browserDownloads; S.isOwner = true; S.canWrite = true;
+  S.me = { name: 'מחובר' };
+  const db = S.db;
+  route();
+  const timer = setTimeout(() => { if (!allReady()) setBanner('warn', 'לא ניתן להגיע למסד הנתונים כרגע. הנתונים יוצגו ברגע שהחיבור יחזור.'); }, 10000);
+  const ok = () => { if (allReady()) { clearTimeout(timer); if (globalBanner && globalBanner.type === 'warn') setBanner(null); } };
+  db.collection('events').onSnapshot(snap => {
+    const m = new Map(); snap.docs.forEach(d => { const x = d.data() || {}; m.set(d.id, Object.assign({ id: d.id }, x, { guests: Array.isArray(x.guests) ? x.guests.filter(Boolean).slice() : (x.guests && typeof x.guests === 'object' ? Object.values(x.guests).filter(Boolean) : []) })); });
+    S.events = m; S.ready.events = true; ok(); changed();
+  }, onDbError);
+  db.collection('attendance').onSnapshot(snap => {
+    const m = new Map(); snap.docs.forEach(d => { const p = (d.data() || {}).present; m.set(d.id, p && typeof p === 'object' ? Object.assign({}, p) : {}); });
+    for (const [eid, ov] of S.overlay) { const base = m.get(eid) || {}; for (const k in ov) { const q = WQ.get(eid); const pending = q && (k in q.pending || q.busy); if (!pending && !!base[k] === !!ov[k]) delete ov[k]; } }
+    for (const eid of S.events.keys()) if (!m.has(eid)) m.set(eid, {});
+    S.att = m; S.ready.att = true; ok(); changed();
+  }, onDbError);
+  db.doc('settings/app').onSnapshot(snap => {
+    if (snap.exists) S.settings = Object.assign({ goal: 70, orgName: '', defaultSort: 'last' }, snap.data());
+    changed();
+  }, () => {});
+  updateSideFoot();
+}
+function boot() {
+  setupChartDefaults();
+  if (!window.firebase) { showConfigGate('רכיבי Firebase לא נטענו. בדקו את החיבור לאינטרנט ורעננו.'); return; }
+  if (!firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith('PASTE')) { showConfigGate(); return; }
+  firebase.initializeApp(firebaseConfig);
+  // No login screen: the app signs in silently (Anonymous Auth) so the database rules can still require a signed-in app.
+  firebase.auth().onAuthStateChanged(u => {
+    if (u) { startData(u); return; }
+    firebase.auth().signInAnonymously().catch(e => {
+      console.error(e);
+      showConfigGate(/operation-not-allowed|admin-restricted/.test((e && e.code) || '') ? 'יש להפעיל כניסה אנונימית ב-Firebase: Authentication ← Sign-in method ← Anonymous ← Enable.' : 'לא ניתן להתחבר ל-Firebase. בדקו את החיבור לאינטרנט ואת פרטי firebaseConfig.');
+    });
+  });
+}
+boot();
 </script>
 </body>
 </html>
