@@ -337,11 +337,10 @@ textarea.input{height:auto;min-height:80px;padding:10px 12px;resize:vertical}
    Project settings → General → Your apps → SDK setup and configuration → Config
    ===================================================================== */
 const firebaseConfig = {
-  apiKey: "PASTE_API_KEY",
-  authDomain: "PASTE_PROJECT.firebaseapp.com",
-  databaseURL: "https://PASTE_PROJECT-default-rtdb.firebaseio.com",
-  projectId: "PASTE_PROJECT",
-  appId: "PASTE_APP_ID"
+  apiKey: "AIzaSyC2xGXHhzYNMQ3jupdfQqKAqgSs570Waec",
+  authDomain: "security-event-check.firebaseapp.com",
+  databaseURL: "https://security-event-check-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "security-event-check"
 };
 /* כל נתוני המערכת נשמרים תחת הענף הזה במסד, בנפרד מנתונים של מערכות אחרות */
 const ROOT = 'attendanceApp';
@@ -351,7 +350,7 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const genId = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-const normName = s => String(s ?? '').replace(/[‎‏‪-‮]/g, '').replace(/\s+/g, ' ').trim();
+const normName = s => String(s ?? '').replace(/[\u200e\u200f\u202a-\u202e]/g, '').replace(/\s+/g, ' ').trim();
 const keyOf = (f, l) => (normName(f) + '|' + normName(l)).toLowerCase();
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const collator = new Intl.Collator('he', { sensitivity: 'base', numeric: true });
@@ -681,7 +680,7 @@ function buildImportItems(rows, map, existingInEvent) {
 }
 async function parseGuestFile(file) {
   const ext = (file.name.split('.').pop() || '').toLowerCase();
-  if (!['csv', 'xlsx', 'xls', 'txt'].includes(ext)) throw new Error('סוג קובץ לא נתמך. יש להעלות קובץ CSV או Excel ‏(xlsx / xls).');
+  if (!['csv', 'xlsx', 'xls', 'txt'].includes(ext)) throw new Error('סוג קובץ לא נתמך. יש להעלות קובץ CSV או Excel (xlsx / xls).');
   if (file.size > 15 * 1024 * 1024) throw new Error('הקובץ גדול מדי (מעל 15MB).');
   if (!window.XLSX) throw new Error('רכיב קריאת הקבצים לא נטען. בדקו את החיבור לאינטרנט ורעננו.');
   let wb;
@@ -689,7 +688,7 @@ async function parseGuestFile(file) {
   if (ext === 'csv' || ext === 'txt') {
     let text = new TextDecoder('utf-8').decode(buf);
     if (text.includes(String.fromCharCode(0xFFFD))) { try { text = new TextDecoder('windows-1255').decode(buf); } catch (e) {} }
-    text = text.replace(/^﻿/, '');
+    text = text.replace(/^\ufeff/, '');
     wb = XLSX.read(text, { type: 'string', raw: true });
   } else {
     wb = XLSX.read(buf, { type: 'array' });
@@ -706,7 +705,7 @@ const colName = i => { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; 
 function createImporter(container, { getExistingIds = () => null, onChange = () => {} } = {}) {
   const st = { file: null, wb: null, sheet: null, rows: [], map: null, items: [], filter: 'all' };
   container.innerHTML = `<input type="file" accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
-    <div class="imp-drop drop" tabindex="0" role="button">${ICON.up}<div class="d-title">גררו לכאן קובץ או לחצו לבחירה</div><div class="d-sub">CSV, ‏Excel ‏(xlsx, xls) · עמודות שם פרטי ושם משפחה מזוהות אוטומטית</div></div>
+    <div class="imp-drop drop" tabindex="0" role="button">${ICON.up}<div class="d-title">גררו לכאן קובץ או לחצו לבחירה</div><div class="d-sub">CSV / Excel (xlsx, xls) · עמודות שם פרטי ושם משפחה מזוהות אוטומטית</div></div>
     <div class="imp-err err-msg" style="margin-top:8px"></div>
     <div class="imp-body" hidden></div>`;
   const input = $('input[type=file]', container), drop = $('.imp-drop', container), errEl = $('.imp-err', container), body = $('.imp-body', container);
@@ -808,7 +807,7 @@ async function updateEventGuests(eid, mutate) {
 /** Parse pasted names: one guest per line. "first last", "first,last" or "first<TAB>last". */
 function parsePasted(text) {
   const rows = String(text || '').split(/\r?\n/).map(line => {
-    const t = line.replace(/[‎‏]/g, '').trim();
+    const t = line.replace(/[\u200e\u200f]/g, '').trim();
     if (!t) return ['', ''];
     if (/[\t,;]/.test(t)) { const parts = t.split(/[\t,;]+/).map(normName).filter(Boolean); return [parts[0] || '', parts.slice(1).join(' ')]; }
     const parts = normName(t).split(' '); return [parts.shift() || '', parts.join(' ')];
@@ -910,7 +909,7 @@ function xlsxBook(sheets) {
   return XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
 }
 const csvCell = v => { const s = String(v ?? ''); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
-const toCsv = rows => '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+const toCsv = rows => '\ufeff' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
 function eventRows(ev) {
   const p = presentMap(ev.id);
   const list = (ev.guests || []).map(g => ({ g, id: g.id, at: p[g.id] || null }));
@@ -1315,7 +1314,7 @@ const EventView = {
       if (more) { this.limit += 600; this.renderRows(); }
     });
     $('#e-exp').onclick = e => { e.stopPropagation(); const ev = S.events.get(this.id); showMenu($('#e-exp'), [
-      { label: 'ייצוא ל-Excel ‏(xlsx)', icon: ICON.dl, onClick: () => exportEvent(ev, 'xlsx') },
+      { label: 'ייצוא ל-Excel (xlsx)', icon: ICON.dl, onClick: () => exportEvent(ev, 'xlsx') },
       { label: 'ייצוא ל-CSV', icon: ICON.dl, onClick: () => exportEvent(ev, 'csv') }
     ]); };
     if (!ro) {
